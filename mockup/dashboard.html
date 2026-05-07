@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>台股 Dashboard Mockup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'sans-serif'] },
+        colors: {
+          ink: { 950: '#0a0a0b', 900: '#111113', 800: '#1a1a1d', 700: '#26262a', 600: '#3a3a40' },
+          accent: { DEFAULT: '#7c5cff', soft: '#a78bfa' },
+          up: '#ef4444',
+          down: '#10b981',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-feature-settings: 'cv11', 'ss01'; letter-spacing: -0.01em; }
+  .num { font-variant-numeric: tabular-nums; }
+  .card { background: #111113; border: 1px solid #1f1f23; border-radius: 14px; }
+  .chip { background: #1a1a1d; border: 1px solid #26262a; }
+  .divider { border-color: #1f1f23; }
+  .glow-up { box-shadow: 0 0 0 1px rgba(239,68,68,0.15) inset; }
+  .glow-down { box-shadow: 0 0 0 1px rgba(16,185,129,0.15) inset; }
+  .spark { stroke: #7c5cff; stroke-width: 1.5; fill: none; }
+  .spark-area { fill: url(#sparkGrad); }
+  .progress-bg { background: #1f1f23; }
+  .progress-fill { background: linear-gradient(90deg, #7c5cff, #a78bfa); }
+  .led-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+  .led-yellow { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+  .led-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+</style>
+</head>
+<body class="bg-ink-950 text-zinc-200 min-h-screen">
+
+<!-- Top Nav -->
+<header class="sticky top-0 z-10 backdrop-blur bg-ink-950/80 border-b divider">
+  <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-soft"></div>
+      <span class="font-semibold text-zinc-100">Tickr</span>
+    </div>
+    <div class="flex-1 max-w-md ml-6">
+      <div class="relative">
+        <input class="w-full bg-ink-900 border divider rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-accent" placeholder="輸入股票代號或名稱（例：2330、台積電）" value="2330 台積電"/>
+        <svg class="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+      </div>
+    </div>
+    <nav class="flex items-center gap-1 text-sm text-zinc-400">
+      <button class="px-3 py-1.5 rounded-md text-zinc-100 bg-ink-800">總覽</button>
+      <button class="px-3 py-1.5 rounded-md hover:bg-ink-800">基本面</button>
+      <button class="px-3 py-1.5 rounded-md hover:bg-ink-800">技術面</button>
+      <button class="px-3 py-1.5 rounded-md hover:bg-ink-800">籌碼</button>
+      <button class="px-3 py-1.5 rounded-md hover:bg-ink-800">宏觀</button>
+    </nav>
+    <div class="ml-auto flex items-center gap-2">
+      <button class="text-xs px-2.5 py-1.5 rounded-md chip text-zinc-300">⌘ K</button>
+      <div class="w-8 h-8 rounded-full bg-ink-800 border divider"></div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-6 py-6 space-y-6">
+
+  <!-- Watchlist Strip -->
+  <div class="flex items-center gap-2 overflow-x-auto pb-1">
+    <span class="text-xs text-zinc-500 mr-2">自選</span>
+    <button class="chip rounded-lg px-3 py-1.5 text-sm flex items-center gap-2">
+      <span class="text-zinc-100 font-medium num">2330</span>
+      <span class="text-up text-xs num">+1.42%</span>
+    </button>
+    <button class="chip rounded-lg px-3 py-1.5 text-sm flex items-center gap-2">
+      <span class="text-zinc-300 num">2454</span>
+      <span class="text-down text-xs num">-0.85%</span>
+    </button>
+    <button class="chip rounded-lg px-3 py-1.5 text-sm flex items-center gap-2">
+      <span class="text-zinc-300 num">2317</span>
+      <span class="text-up text-xs num">+0.31%</span>
+    </button>
+    <button class="chip rounded-lg px-3 py-1.5 text-sm flex items-center gap-2">
+      <span class="text-zinc-300 num">3008</span>
+      <span class="text-down text-xs num">-2.14%</span>
+    </button>
+    <button class="chip rounded-lg px-3 py-1.5 text-sm flex items-center gap-2 border-dashed">
+      <span class="text-zinc-500">+ 新增</span>
+    </button>
+  </div>
+
+  <!-- Hero: Stock summary -->
+  <section class="card p-6">
+    <div class="flex items-start justify-between gap-6 flex-wrap">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h1 class="text-2xl font-semibold text-zinc-100">台積電</h1>
+          <span class="text-zinc-500 num text-sm">2330.TW</span>
+          <span class="chip rounded-md px-2 py-0.5 text-xs text-zinc-400">半導體</span>
+          <span class="chip rounded-md px-2 py-0.5 text-xs text-zinc-400">上市</span>
+        </div>
+        <div class="flex items-baseline gap-3">
+          <div class="text-5xl font-semibold num text-zinc-100">1,085</div>
+          <div class="text-up num text-lg">+15.00 (+1.42%)</div>
+        </div>
+        <div class="text-xs text-zinc-500 mt-2 num">最後更新 14:30:00 · TTL 47s</div>
+      </div>
+      <div class="flex gap-6 text-sm">
+        <div>
+          <div class="text-zinc-500 text-xs mb-1">市值</div>
+          <div class="num text-zinc-200">28.14T</div>
+        </div>
+        <div>
+          <div class="text-zinc-500 text-xs mb-1">成交量</div>
+          <div class="num text-zinc-200">42.1K 張</div>
+        </div>
+        <div>
+          <div class="text-zinc-500 text-xs mb-1">52W 高低</div>
+          <div class="num text-zinc-200">1,120 / 720</div>
+        </div>
+        <div>
+          <div class="text-zinc-500 text-xs mb-1">1M / 3M</div>
+          <div class="num text-up">+8.4% / +18.2%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk LEDs -->
+    <div class="flex flex-wrap items-center gap-3 mt-5 pt-5 border-t divider">
+      <span class="text-xs text-zinc-500">風險燈號</span>
+      <div class="chip rounded-md px-2.5 py-1 flex items-center gap-2 text-xs">
+        <span class="led-yellow w-2 h-2 rounded-full"></span>
+        <span class="text-zinc-300">估值偏高 P/E 27.4</span>
+      </div>
+      <div class="chip rounded-md px-2.5 py-1 flex items-center gap-2 text-xs">
+        <span class="led-red w-2 h-2 rounded-full"></span>
+        <span class="text-zinc-300">月線乖離 +11.2%</span>
+      </div>
+      <div class="chip rounded-md px-2.5 py-1 flex items-center gap-2 text-xs">
+        <span class="led-green w-2 h-2 rounded-full"></span>
+        <span class="text-zinc-300">外資連買 5 日</span>
+      </div>
+      <div class="chip rounded-md px-2.5 py-1 flex items-center gap-2 text-xs">
+        <span class="led-green w-2 h-2 rounded-full"></span>
+        <span class="text-zinc-300">營收 YoY +28%</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPI Grid -->
+  <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="card p-4">
+      <div class="text-xs text-zinc-500 mb-1">P/E (TTM)</div>
+      <div class="text-xl font-semibold num text-zinc-100">27.4</div>
+      <div class="text-[11px] text-zinc-500 mt-1">5Y 區間 第 78 分位</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-zinc-500 mb-1">Forward P/E</div>
+      <div class="text-xl font-semibold num text-zinc-100">21.8</div>
+      <div class="text-[11px] text-down mt-1">↓ 較合理</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-zinc-500 mb-1">EPS (近四季)</div>
+      <div class="text-xl font-semibold num text-zinc-100">39.62</div>
+      <div class="text-[11px] text-up mt-1">YoY +32.1%</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-zinc-500 mb-1">毛利率</div>
+      <div class="text-xl font-semibold num text-zinc-100">58.6%</div>
+      <div class="text-[11px] text-up mt-1">QoQ +1.2pp</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-zinc-500 mb-1">月營收 YoY</div>
+      <div class="text-xl font-semibold num text-up">+28.4%</div>
+      <div class="text-[11px] text-zinc-500 mt-1">10 月 3,143 億</div>
+    </div>
+    <div class="card p-4">
+      <div class="text-xs text-zinc-500 mb-1">月線乖離</div>
+      <div class="text-xl font-semibold num text-up">+11.2%</div>
+      <div class="text-[11px] text-zinc-500 mt-1">注意過熱</div>
+    </div>
+  </section>
+
+  <!-- Main grid: chart + side panels -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Chart -->
+    <div class="card p-5 lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-medium text-zinc-100">股價 / 估值</h2>
+        <div class="flex gap-1 text-xs">
+          <button class="px-2 py-1 rounded chip text-zinc-300">1D</button>
+          <button class="px-2 py-1 rounded chip text-zinc-300">1W</button>
+          <button class="px-2 py-1 rounded text-zinc-100 bg-accent/20 border border-accent/40">1M</button>
+          <button class="px-2 py-1 rounded chip text-zinc-300">3M</button>
+          <button class="px-2 py-1 rounded chip text-zinc-300">1Y</button>
+          <button class="px-2 py-1 rounded chip text-zinc-300">5Y</button>
+        </div>
+      </div>
+      <svg viewBox="0 0 700 260" class="w-full h-64">
+        <defs>
+          <linearGradient id="sparkGrad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- gridlines -->
+        <g stroke="#1f1f23">
+          <line x1="0" y1="60" x2="700" y2="60"/>
+          <line x1="0" y1="120" x2="700" y2="120"/>
+          <line x1="0" y1="180" x2="700" y2="180"/>
+          <line x1="0" y1="240" x2="700" y2="240"/>
+        </g>
+        <!-- price area -->
+        <path class="spark-area" d="M0,200 L40,190 L80,170 L120,180 L160,150 L200,160 L240,130 L280,140 L320,120 L360,100 L400,110 L440,90 L480,95 L520,80 L560,70 L600,85 L640,60 L680,55 L700,50 L700,260 L0,260 Z"/>
+        <path class="spark" d="M0,200 L40,190 L80,170 L120,180 L160,150 L200,160 L240,130 L280,140 L320,120 L360,100 L400,110 L440,90 L480,95 L520,80 L560,70 L600,85 L640,60 L680,55 L700,50"/>
+        <!-- MA20 -->
+        <path stroke="#f59e0b" stroke-width="1" fill="none" stroke-dasharray="3 3" d="M0,210 C100,200 200,180 350,140 S550,90 700,70"/>
+        <!-- labels -->
+        <text x="10" y="20" fill="#71717a" font-size="11">1,120</text>
+        <text x="10" y="250" fill="#71717a" font-size="11">980</text>
+      </svg>
+      <div class="flex items-center gap-4 mt-3 text-xs text-zinc-400">
+        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-accent"></span>收盤</div>
+        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>MA20</div>
+        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-zinc-500"></span>P/E 區間</div>
+      </div>
+    </div>
+
+    <!-- Macro panel -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-medium text-zinc-100">宏觀風險</h2>
+        <span class="text-[11px] text-zinc-500">每小時更新</span>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-400">US 10Y</span>
+          <div class="flex items-center gap-2">
+            <span class="num text-zinc-200">4.32%</span>
+            <span class="text-up text-xs num">+0.04</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-400">VIX</span>
+          <div class="flex items-center gap-2">
+            <span class="num text-zinc-200">14.8</span>
+            <span class="text-down text-xs num">-0.6</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-400">SOX</span>
+          <div class="flex items-center gap-2">
+            <span class="num text-zinc-200">5,142</span>
+            <span class="text-up text-xs num">+1.2%</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-400">DXY</span>
+          <div class="flex items-center gap-2">
+            <span class="num text-zinc-200">104.2</span>
+            <span class="text-down text-xs num">-0.3</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-400">USD/TWD</span>
+          <div class="flex items-center gap-2">
+            <span class="num text-zinc-200">31.85</span>
+            <span class="text-zinc-500 text-xs num">±0.00</span>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 pt-4 border-t divider">
+        <div class="text-xs text-zinc-500 mb-2">綜合環境</div>
+        <div class="flex items-center gap-2">
+          <span class="led-green w-2 h-2 rounded-full"></span>
+          <span class="text-sm text-zinc-200">風險偏好 偏多</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom: 3 columns -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Fundamentals -->
+    <div class="card p-5">
+      <h2 class="font-medium text-zinc-100 mb-4">基本面</h2>
+      <div class="space-y-3 text-sm">
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-zinc-400">毛利率</span>
+            <span class="num text-zinc-200">58.6%</span>
+          </div>
+          <div class="progress-bg h-1 rounded"><div class="progress-fill h-1 rounded" style="width: 78%"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-zinc-400">營益率</span>
+            <span class="num text-zinc-200">47.5%</span>
+          </div>
+          <div class="progress-bg h-1 rounded"><div class="progress-fill h-1 rounded" style="width: 70%"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-zinc-400">ROE</span>
+            <span class="num text-zinc-200">28.1%</span>
+          </div>
+          <div class="progress-bg h-1 rounded"><div class="progress-fill h-1 rounded" style="width: 84%"></div></div>
+        </div>
+        <div class="pt-3 border-t divider grid grid-cols-2 gap-3">
+          <div>
+            <div class="text-xs text-zinc-500">單季 EPS</div>
+            <div class="num text-zinc-100">12.54</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">TTM EPS</div>
+            <div class="num text-zinc-100">39.62</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">月營收 YoY</div>
+            <div class="num text-up">+28.4%</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">季營收 QoQ</div>
+            <div class="num text-up">+12.1%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chips -->
+    <div class="card p-5">
+      <h2 class="font-medium text-zinc-100 mb-4">籌碼面</h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between items-center py-1.5">
+          <span class="text-zinc-400">外資</span>
+          <div class="flex items-center gap-3">
+            <div class="w-24 h-1.5 progress-bg rounded relative">
+              <div class="absolute right-1/2 h-1.5 bg-up rounded-l" style="width: 35%"></div>
+            </div>
+            <span class="num text-up text-right w-20">+8,420 張</span>
+          </div>
+        </div>
+        <div class="flex justify-between items-center py-1.5">
+          <span class="text-zinc-400">投信</span>
+          <div class="flex items-center gap-3">
+            <div class="w-24 h-1.5 progress-bg rounded relative">
+              <div class="absolute right-1/2 h-1.5 bg-up rounded-l" style="width: 12%"></div>
+            </div>
+            <span class="num text-up text-right w-20">+1,250 張</span>
+          </div>
+        </div>
+        <div class="flex justify-between items-center py-1.5">
+          <span class="text-zinc-400">自營商</span>
+          <div class="flex items-center gap-3">
+            <div class="w-24 h-1.5 progress-bg rounded relative">
+              <div class="absolute left-1/2 h-1.5 bg-down rounded-r" style="width: 8%"></div>
+            </div>
+            <span class="num text-down text-right w-20">-310 張</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t divider grid grid-cols-2 gap-3">
+          <div>
+            <div class="text-xs text-zinc-500">外資持股</div>
+            <div class="num text-zinc-100">73.4%</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">融資餘額</div>
+            <div class="num text-zinc-100">12.4K</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">融券</div>
+            <div class="num text-zinc-100">823</div>
+          </div>
+          <div>
+            <div class="text-xs text-zinc-500">借券賣出</div>
+            <div class="num text-zinc-100">3.2K</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical -->
+    <div class="card p-5">
+      <h2 class="font-medium text-zinc-100 mb-4">技術面</h2>
+      <div class="space-y-3 text-sm">
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="chip rounded-lg p-2">
+            <div class="text-[11px] text-zinc-500">MA5</div>
+            <div class="num text-zinc-100">1,072</div>
+          </div>
+          <div class="chip rounded-lg p-2">
+            <div class="text-[11px] text-zinc-500">MA20</div>
+            <div class="num text-zinc-100">975</div>
+          </div>
+          <div class="chip rounded-lg p-2">
+            <div class="text-[11px] text-zinc-500">MA60</div>
+            <div class="num text-zinc-100">912</div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-zinc-400">RSI(14)</span>
+            <span class="num text-zinc-200">68.2</span>
+          </div>
+          <div class="progress-bg h-1 rounded relative">
+            <div class="progress-fill h-1 rounded" style="width: 68%"></div>
+            <div class="absolute top-0 h-1 border-l border-amber-500" style="left: 70%"></div>
+          </div>
+          <div class="text-[11px] text-amber-400 mt-1">接近超買區</div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-zinc-400">月線乖離</span>
+            <span class="num text-up">+11.2%</span>
+          </div>
+        </div>
+        <div class="pt-3 border-t divider">
+          <div class="text-xs text-zinc-500 mb-1">支撐 / 壓力</div>
+          <div class="flex justify-between text-sm">
+            <span class="num text-down">980</span>
+            <span class="text-zinc-500">···</span>
+            <span class="num text-up">1,120</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- News -->
+  <section class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-medium text-zinc-100">消息面（近 7 日）</h2>
+      <div class="flex gap-1 text-xs">
+        <button class="px-2 py-1 rounded chip">全部</button>
+        <button class="px-2 py-1 rounded chip text-up">利多 8</button>
+        <button class="px-2 py-1 rounded chip text-down">利空 2</button>
+        <button class="px-2 py-1 rounded chip text-zinc-400">中性 5</button>
+      </div>
+    </div>
+    <ul class="divide-y divider">
+      <li class="py-3 flex items-start gap-3">
+        <span class="led-green w-1.5 h-1.5 rounded-full mt-2"></span>
+        <div class="flex-1">
+          <div class="text-zinc-100">外資調升目標價至 1,250 元，預期 AI HBM 訂單延續到 2027</div>
+          <div class="text-xs text-zinc-500 mt-1">摩根大通 · 2 小時前 · 利多</div>
+        </div>
+      </li>
+      <li class="py-3 flex items-start gap-3">
+        <span class="led-green w-1.5 h-1.5 rounded-full mt-2"></span>
+        <div class="flex-1">
+          <div class="text-zinc-100">10 月營收 3,143 億創新高，YoY +28.4%</div>
+          <div class="text-xs text-zinc-500 mt-1">公司公告 · 昨天 · 利多</div>
+        </div>
+      </li>
+      <li class="py-3 flex items-start gap-3">
+        <span class="led-red w-1.5 h-1.5 rounded-full mt-2"></span>
+        <div class="flex-1">
+          <div class="text-zinc-100">美方傳擴大半導體出口管制範圍，影響中國客戶比重待釐清</div>
+          <div class="text-xs text-zinc-500 mt-1">路透 · 2 天前 · 利空</div>
+        </div>
+      </li>
+      <li class="py-3 flex items-start gap-3">
+        <span class="led-yellow w-1.5 h-1.5 rounded-full mt-2"></span>
+        <div class="flex-1">
+          <div class="text-zinc-100">法說會：CapEx 上調至 USD 420 億，2nm 試產良率優於預期</div>
+          <div class="text-xs text-zinc-500 mt-1">法說會紀要 · 5 天前 · 中性</div>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <footer class="text-center text-xs text-zinc-600 py-8">
+    Tickr · 資料來源：證交所 · 公開資訊觀測站 · Yahoo Finance · FRED · 僅供參考非投資建議
+  </footer>
+</main>
+</body>
+</html>
