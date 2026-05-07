@@ -29,34 +29,39 @@ export const fetchYahooQuote = async (
   symbol: string,
   opts: Opts = {},
 ): Promise<YahooQuote> => {
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}.TW`;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}.TW?range=1d&interval=1d`;
   const res = await fetchWithRetry(
     url,
     { headers: headers(opts.userAgent ?? DEFAULT_UA) },
     { fetcher: opts.fetcher },
   );
   const json = await res.json() as {
-    quoteResponse: { result: Array<Record<string, unknown>> };
+    chart: { result: Array<{ meta: Record<string, unknown> }> | null };
   };
-  const r = json.quoteResponse.result[0];
+  const r = json.chart.result?.[0];
   if (!r) throw new Error('not_found');
+  const m = r.meta;
   const num = (k: string): number | null => {
-    const v = r[k];
+    const v = m[k];
     return typeof v === 'number' ? v : null;
   };
+  const price = num('regularMarketPrice') ?? 0;
+  const prevClose = num('chartPreviousClose') ?? price;
+  const change = price - prevClose;
+  const changePct = prevClose === 0 ? 0 : (change / prevClose) * 100;
   return {
     symbol,
-    name: String(r.shortName ?? r.longName ?? symbol),
-    price: num('regularMarketPrice') ?? 0,
-    change: num('regularMarketChange') ?? 0,
-    changePct: num('regularMarketChangePercent') ?? 0,
+    name: String(m.shortName ?? m.longName ?? symbol),
+    price,
+    change,
+    changePct,
     volume: num('regularMarketVolume') ?? 0,
-    marketCap: num('marketCap'),
+    marketCap: null,
     high52w: num('fiftyTwoWeekHigh'),
     low52w: num('fiftyTwoWeekLow'),
-    pe: num('trailingPE'),
-    forwardPe: num('forwardPE'),
-    ttmEps: num('epsTrailingTwelveMonths'),
+    pe: null,
+    forwardPe: null,
+    ttmEps: null,
   };
 };
 

@@ -6,8 +6,8 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "finance_dashboard"
-database_id = "REPLACE_AFTER_CREATE"
+database_id = "967a1066-41c5-4679-bb9d-514c9c5b19ca"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_AFTER_CREATE"
+id = "80030991dd4d4ce5a910c3cb71cce95e"
