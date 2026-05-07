@@ -175,6 +175,17 @@ test.describe('Dashboard E2E', () => {
     await expect(page.getByText('壓力', { exact: true }).first()).toBeVisible();
   });
 
+  test('chart range switcher: clicking 1Y triggers fetch', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    const reqPromise = page.waitForRequest(
+      (r) => r.url().includes('/api/history/2330') && r.url().includes('1y'),
+      { timeout: 10_000 },
+    );
+    await page.getByRole('button', { name: '1Y' }).click();
+    await reqPromise;
+  });
+
   test('input is preloaded with 2330', async ({ page }) => {
     await page.goto('/');
     const input = page.getByPlaceholder(/輸入股票代號/);

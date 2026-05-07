@@ -1,16 +1,34 @@
+import { useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
 import type { PricePoint } from '@fd/shared';
+import { useHistory } from '../hooks/useHistory';
 
 type Props = {
+  symbol: string;
   price: number;
   high52w: number | null;
   low52w: number | null;
-  history: PricePoint[];
+  defaultHistory: PricePoint[];
 };
 
-const RANGES = ['1D', '1W', '1M', '3M', '1Y', '5Y'];
+type Range = '1mo' | '3mo' | '1y' | '5y';
 
-export const PriceChart = ({ price, high52w, low52w, history }: Props) => {
+const RANGES: Array<{ label: string; value: Range }> = [
+  { label: '1M', value: '1mo' },
+  { label: '3M', value: '3mo' },
+  { label: '1Y', value: '1y' },
+  { label: '5Y', value: '5y' },
+];
+
+const DEFAULT_RANGE: Range = '3mo';
+
+export const PriceChart = ({ symbol, price, high52w, low52w, defaultHistory }: Props) => {
+  const [range, setRange] = useState<Range>(DEFAULT_RANGE);
+  const isDefault = range === DEFAULT_RANGE;
+  const { data: historyResp, isFetching } = useHistory(symbol, range);
+
+  const history = isDefault ? defaultHistory : (historyResp?.data ?? []);
+
   const hi = high52w ?? price * 1.2;
   const lo = low52w ?? price * 0.8;
   const pct = (price - lo) / (hi - lo);
@@ -22,47 +40,54 @@ export const PriceChart = ({ price, high52w, low52w, history }: Props) => {
         <div className="flex gap-1 text-xs">
           {RANGES.map((r) => (
             <button
-              key={r}
+              key={r.value}
               type="button"
-              // Phase 3
+              onClick={() => setRange(r.value)}
               className={`px-2 py-1 rounded ${
-                r === '1M'
+                range === r.value
                   ? 'text-zinc-100 bg-accent/20 border border-accent/40'
                   : 'bg-ink-800 border border-ink-700 text-zinc-300'
               }`}
             >
-              {r}
+              {r.label}
             </button>
           ))}
         </div>
       </div>
 
-      {history.length >= 2 ? (
-        <div className="h-[200px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={history} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-              <Tooltip
-                contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }}
-                labelStyle={{ color: '#a1a1aa', fontSize: 11 }}
-                itemStyle={{ color: '#7c5cff', fontSize: 12 }}
-                formatter={(val: number) => [val.toFixed(2), '收盤']}
-              />
-              <Line
-                type="monotone"
-                dataKey="close"
-                stroke="#7c5cff"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm bg-ink-800/40 rounded-xl border border-ink-700">
-          資料不足
-        </div>
-      )}
+      <div className="relative">
+        {isFetching && !isDefault && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-ink-900/60 rounded-xl">
+            <span className="text-zinc-400 text-sm">更新中…</span>
+          </div>
+        )}
+        {history.length >= 2 ? (
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+                <Tooltip
+                  contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }}
+                  labelStyle={{ color: '#a1a1aa', fontSize: 11 }}
+                  itemStyle={{ color: '#7c5cff', fontSize: 12 }}
+                  formatter={(val: number) => [val.toFixed(2), '收盤']}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="close"
+                  stroke="#7c5cff"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm bg-ink-800/40 rounded-xl border border-ink-700">
+            資料不足
+          </div>
+        )}
+      </div>
 
       <div className="mt-4">
         <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">

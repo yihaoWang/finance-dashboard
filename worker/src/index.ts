@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { health } from './routes/health';
+import { history } from './routes/history';
 import { macro } from './routes/macro';
 import { stock } from './routes/stock';
 
@@ -26,6 +27,7 @@ app.use(
 );
 
 app.route('/api/health', health);
+app.route('/api/history', history);
 app.route('/api/macro', macro);
 app.route('/api/stock', stock);
 

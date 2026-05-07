@@ -21,7 +21,7 @@ export const StockDetail = ({ symbol }: Props) => {
       <Hero quote={quote} kpi={kpi} />
       <KpiGrid kpi={kpi} />
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <PriceChart price={quote.price} high52w={quote.high52w} low52w={quote.low52w} history={history} />
+        <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
         <MacroPanel />
       </section>
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
