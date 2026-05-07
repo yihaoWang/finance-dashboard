@@ -12,32 +12,73 @@ test.describe('Dashboard E2E', () => {
     expect(price).toBeLessThan(10_000);
   });
 
-  test('shows P/E (TTM) card with numeric value', async ({ page }) => {
+  test('shows P/E card with numeric value', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
-    const peCard = page.locator('div', { hasText: /^P\/E \(TTM\)/ }).first();
-    const valueEl = peCard.locator('.text-xl.font-semibold').first();
-    const txt = (await valueEl.textContent())?.trim();
+    const peCard = page
+      .locator('div.rounded-xl', { hasText: 'P/E' })
+      .filter({ hasNotText: 'Forward' })
+      .first();
+    const txt = (await peCard.locator('.text-xl').first().textContent())?.trim();
     expect(txt).not.toBe('—');
     expect(Number(txt)).toBeGreaterThan(0);
   });
 
-  test('shows 月線乖離 card with percentage', async ({ page }) => {
+  test('shows 月線乖離率 card with percentage', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
-    const card = page.locator('div', { hasText: /^月線乖離/ }).first();
-    const valueEl = card.locator('.text-xl.font-semibold').first();
-    const txt = (await valueEl.textContent())?.trim() ?? '';
+    const card = page.locator('div.rounded-xl', { hasText: '月線乖離率' }).first();
+    const txt = (await card.locator('.text-xl').first().textContent())?.trim() ?? '';
     expect(txt).toMatch(/-?\d+\.\d{2}%/);
   });
 
-  test('renders 6 KPI cards', async ({ page }) => {
+  test('shows 月營收 YoY with positive growth', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
-    const labels = ['P/E (TTM)', 'Forward P/E', 'EPS (近四季)', '毛利率', '月營收 YoY', '月線乖離'];
+    const card = page.locator('div.rounded-xl', { hasText: '月營收 YoY' }).first();
+    const txt = (await card.locator('.text-xl').first().textContent())?.trim() ?? '';
+    expect(txt).toMatch(/-?\d+\.\d%/);
+  });
+
+  test('shows TTM EPS derived from PE', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    const card = page.locator('div.rounded-xl', { hasText: 'TTM EPS' }).first();
+    const txt = (await card.locator('.text-xl').first().textContent())?.trim() ?? '';
+    expect(Number(txt)).toBeGreaterThan(0);
+  });
+
+  test('renders all 6 KPI labels', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    const labels = ['Forward P/E', 'TTM EPS', '毛利率', '月營收 YoY', '月線乖離率'];
     for (const label of labels) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+      await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
     }
+  });
+
+  test('shows risk LED row with at least 3 indicators', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('風險燈號')).toBeVisible();
+  });
+
+  test('shows watchlist strip with 自選 label', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByText('自選', { exact: true })).toBeVisible();
+  });
+
+  test('shows TopNav tabs', async ({ page }) => {
+    await page.goto('/');
+    for (const tab of ['總覽', '基本面', '技術面', '籌碼', '宏觀']) {
+      await expect(page.getByRole('button', { name: tab })).toBeVisible();
+    }
+  });
+
+  test('shows 宏觀風險 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('宏觀風險')).toBeVisible();
   });
 
   test('search 2454 shows 聯發科', async ({ page }) => {

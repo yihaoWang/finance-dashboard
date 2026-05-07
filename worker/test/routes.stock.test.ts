@@ -9,6 +9,7 @@ describe('GET /api/stock/:symbol', () => {
     await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
     vi.restoreAllMocks();
     vi.spyOn(twse, 'fetchTwseBwibbu').mockResolvedValue(null);
+    vi.spyOn(twse, 'fetchTwseMonthlyRevenue').mockResolvedValue(null);
   });
 
   it('rejects invalid symbol', async () => {

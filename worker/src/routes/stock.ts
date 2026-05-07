@@ -5,7 +5,7 @@ import { validateSymbol } from '../lib/symbol';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 import { upsertDailyPrices, recentCloses } from '../cache/d1';
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
-import { fetchTwseBwibbu } from '../sources/twse';
+import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
 
@@ -65,6 +65,17 @@ stock.get('/:symbol', async (c) => {
     warnings.push('twse_unavailable');
   }
 
+  let revenue = null;
+  try {
+    revenue = await fetchTwseMonthlyRevenue(c.env.KV, symbol);
+  } catch (err) {
+    console.warn('twse revenue failed for symbol', symbol, err);
+    warnings.push('revenue_unavailable');
+  }
+
+  const derivedEps =
+    twse?.pe && twse.pe > 0 && quote.price > 0 ? quote.price / twse.pe : null;
+
   const bundle: StockBundle = {
     quote: {
       symbol: quote.symbol,
@@ -81,9 +92,9 @@ stock.get('/:symbol', async (c) => {
     kpi: {
       pe: twse?.pe ?? quote.pe,
       forwardPe: quote.forwardPe,
-      ttmEps: quote.ttmEps,
+      ttmEps: quote.ttmEps ?? derivedEps,
       grossMargin: null,
-      monthlyRevenueYoy: null,
+      monthlyRevenueYoy: revenue?.yoy ?? null,
       ma20Deviation,
     },
   };
