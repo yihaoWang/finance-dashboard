@@ -8,7 +8,7 @@ export default defineWorkersConfig(async () => {
     test: {
       poolOptions: {
         workers: {
-          wrangler: { configPath: './wrangler.toml' },
+          wrangler: { configPath: './wrangler.test.toml' },
           miniflare: {
             kvNamespaces: ['KV'],
             d1Databases: ['DB'],

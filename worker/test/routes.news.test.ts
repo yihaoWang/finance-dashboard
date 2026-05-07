@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { env } from 'cloudflare:test';
-import app from '../src/index';
+import { app } from '../src/index';
 import * as yahooNews from '../src/sources/yahoo-news';
 
 const MOCK_ITEMS = [

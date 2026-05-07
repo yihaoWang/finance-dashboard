@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { env, applyD1Migrations } from 'cloudflare:test';
-import app from '../src/index';
+import { app } from '../src/index';
 import * as yahoo from '../src/sources/yahoo';
 import * as twse from '../src/sources/twse';
 import * as twseChips from '../src/sources/twse-chips';

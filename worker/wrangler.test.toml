@@ -11,9 +11,3 @@ database_id = "967a1066-41c5-4679-bb9d-514c9c5b19ca"
 [[kv_namespaces]]
 binding = "KV"
 id = "80030991dd4d4ce5a910c3cb71cce95e"
-
-[ai]
-binding = "AI"
-
-[triggers]
-crons = ["0 14 * * *"]

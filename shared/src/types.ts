@@ -73,3 +73,17 @@ export type NewsItem = {
 };
 
 export type NewsBundle = { items: NewsItem[] };
+
+export type DigestScope = 'market' | 'stock';
+export type DigestSection = { hard_data: string; framework: string; sentiment: string };
+export type DigestSource = { name: string; url: string; timestamp: number };
+export type DigestBundle = {
+  date: string;
+  scope: DigestScope;
+  symbol: string;
+  sections: DigestSection;
+  sources: DigestSource[];
+  model: string;
+  createdAt: number;
+};
+export type DigestHistoryItem = { date: string; scope: DigestScope; symbol: string; createdAt: number };

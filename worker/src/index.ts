@@ -5,9 +5,13 @@ import { history } from './routes/history';
 import { macro } from './routes/macro';
 import { stock } from './routes/stock';
 import { news } from './routes/news';
+import { digest } from './routes/digest';
+import { scheduled } from './cron';
 
 export type Env = {
+  AI: Ai;
   DB: D1Database;
+  FRED_API_KEY?: string;
   KV: KVNamespace;
   YAHOO_USER_AGENT?: string;
 };
@@ -32,5 +36,7 @@ app.route('/api/history', history);
 app.route('/api/macro', macro);
 app.route('/api/stock', stock);
 app.route('/api/news', news);
+app.route('/api/digest', digest);
 
-export default app;
+export { app };
+export default { fetch: app.fetch.bind(app), scheduled };

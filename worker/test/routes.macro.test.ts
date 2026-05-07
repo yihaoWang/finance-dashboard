@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { env } from 'cloudflare:test';
-import app from '../src/index';
+import { app } from '../src/index';
 import * as macroSource from '../src/sources/macro';
 import type { MacroBundle } from '@fd/shared';
 

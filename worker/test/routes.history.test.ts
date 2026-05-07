@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { env } from 'cloudflare:test';
-import app from '../src/index';
+import { app } from '../src/index';
 import * as yahoo from '../src/sources/yahoo';
 
 const mockRows = Array.from({ length: 20 }, (_, i) => ({
