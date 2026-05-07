@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { env, applyD1Migrations } from 'cloudflare:test';
 import app from '../src/index';
 import * as yahoo from '../src/sources/yahoo';
+import * as twse from '../src/sources/twse';
 
 describe('GET /api/stock/:symbol', () => {
   beforeEach(async () => {
     await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
     vi.restoreAllMocks();
+    vi.spyOn(twse, 'fetchTwseBwibbu').mockResolvedValue(null);
   });
 
   it('rejects invalid symbol', async () => {

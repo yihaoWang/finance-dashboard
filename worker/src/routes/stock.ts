@@ -5,6 +5,7 @@ import { validateSymbol } from '../lib/symbol';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 import { upsertDailyPrices, recentCloses } from '../cache/d1';
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
+import { fetchTwseBwibbu } from '../sources/twse';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
 
@@ -56,10 +57,18 @@ stock.get('/:symbol', async (c) => {
   const ma20 = sma(closes, 20);
   const ma20Deviation = deviation(quote.price, ma20);
 
+  let twse = null;
+  try {
+    twse = await fetchTwseBwibbu(c.env.KV, symbol);
+  } catch (err) {
+    console.warn('twse bwibbu failed for symbol', symbol, err);
+    warnings.push('twse_unavailable');
+  }
+
   const bundle: StockBundle = {
     quote: {
       symbol: quote.symbol,
-      name: quote.name,
+      name: twse?.name ?? quote.name,
       price: quote.price,
       change: quote.change,
       changePct: quote.changePct,
@@ -70,7 +79,7 @@ stock.get('/:symbol', async (c) => {
       updatedAt: Date.now(),
     },
     kpi: {
-      pe: quote.pe,
+      pe: twse?.pe ?? quote.pe,
       forwardPe: quote.forwardPe,
       ttmEps: quote.ttmEps,
       grossMargin: null,
