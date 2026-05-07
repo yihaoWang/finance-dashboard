@@ -230,4 +230,20 @@ test.describe('Dashboard E2E', () => {
     const allPill = page.getByRole('button', { name: /全部/ });
     await expect(allPill).toBeVisible({ timeout: 10_000 });
   });
+
+  test('DigestCard renders 3 section headings', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    // DigestCard is present; check for the 3 section headings (may fail if backend not ready)
+    await expect(page.getByText('硬數據')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('框架解讀')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('情緒')).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("clicking 'AI 解讀' tab navigates to /digest", async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: 'AI 解讀' }).click();
+    await expect(page).toHaveURL(/\/digest/);
+  });
 });

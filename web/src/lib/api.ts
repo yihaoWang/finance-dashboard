@@ -1,4 +1,4 @@
-import type { ApiResponse, MacroBundle, NewsBundle, PricePoint, StockBundle } from '@fd/shared';
+import type { ApiResponse, DigestBundle, DigestHistoryItem, MacroBundle, NewsBundle, PricePoint, StockBundle } from '@fd/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -27,4 +27,20 @@ export const fetchNews = async (symbol: string): Promise<ApiResponse<NewsBundle>
   const res = await fetch(`${API_BASE}/api/news/${encodeURIComponent(symbol)}`);
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<NewsBundle>>;
+};
+
+export const fetchDigest = async (symbol: string, date?: string): Promise<ApiResponse<DigestBundle>> => {
+  const path = symbol === 'market' ? '/api/digest' : `/api/digest/${encodeURIComponent(symbol)}`;
+  const url = `${API_BASE}${path}${date !== undefined ? `?date=${date}` : ''}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<DigestBundle>>;
+};
+
+export const fetchDigestHistory = async (scope: 'market' | 'stock', symbol?: string, limit = 30): Promise<ApiResponse<DigestHistoryItem[]>> => {
+  const params = new URLSearchParams({ scope, limit: String(limit) });
+  if (symbol !== undefined) params.set('symbol', symbol);
+  const res = await fetch(`${API_BASE}/api/digest/history?${params}`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<DigestHistoryItem[]>>;
 };

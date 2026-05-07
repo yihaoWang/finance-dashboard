@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { TopNav } from './components/TopNav';
-import { WatchlistStrip } from './components/WatchlistStrip';
-import { StockDetail } from './pages/StockDetail';
+import { Routes, Route } from 'react-router-dom';
+import { DashboardPage } from './pages/DashboardPage';
+import { DigestHistory } from './pages/DigestHistory';
 
 const STORAGE_KEY = 'fd:watchlist';
 const DEFAULT_WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
@@ -28,36 +28,22 @@ export const App = () => {
     setWatchlist(loadWatchlist());
   }, []);
 
-  const submit = () => {
-    const v = input.trim().toUpperCase();
-    if (v.length === 0) return;
-    setSymbol(v);
-    if (!watchlist.includes(v) && /^[A-Z0-9]{4,6}$/.test(v)) {
-      const next = [v, ...watchlist].slice(0, 10);
-      setWatchlist(next);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch (err) {
-        console.warn('failed to persist watchlist', err);
-      }
-    }
-  };
-
-  const pick = (s: string) => {
-    setSymbol(s);
-    setInput(s);
-  };
-
   return (
-    <div>
-      <TopNav input={input} onInputChange={setInput} onSubmit={submit} />
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} />
-        <StockDetail symbol={symbol} />
-      </main>
-      <footer className="text-center text-xs text-zinc-600 py-8">
-        Tickr · 資料來源：證交所 · Yahoo Finance · 僅供參考非投資建議
-      </footer>
-    </div>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <DashboardPage
+            symbol={symbol}
+            input={input}
+            setInput={setInput}
+            setSymbol={setSymbol}
+            watchlist={watchlist}
+            setWatchlist={setWatchlist}
+          />
+        }
+      />
+      <Route path="/digest" element={<DigestHistory watchlist={watchlist} />} />
+    </Routes>
   );
 };

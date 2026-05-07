@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 type Props = {
   input: string;
@@ -6,7 +7,7 @@ type Props = {
   onSubmit: () => void;
 };
 
-const TABS: { id: string; label: string }[] = [
+const SCROLL_TABS: { id: string; label: string }[] = [
   { id: 'overview', label: '總覽' },
   { id: 'fundamentals', label: '基本面' },
   { id: 'technicals', label: '技術面' },
@@ -24,24 +25,37 @@ const scrollToSection = (id: string) => {
 };
 
 export const TopNav = ({ input, onInputChange, onSubmit }: Props) => {
-  const [active, setActive] = useState('overview');
+  const [activeSection, setActiveSection] = useState('overview');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isDigestPage = location.pathname.startsWith('/digest');
 
   useEffect(() => {
+    if (isDigestPage) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]) setActive(visible[0].target.id);
+        if (visible[0] !== undefined) setActiveSection(visible[0].target.id);
       },
       { rootMargin: `-${HEADER_OFFSET + 20}px 0px -50% 0px`, threshold: [0, 0.25, 0.5, 1] },
     );
-    for (const tab of TABS) {
+    for (const tab of SCROLL_TABS) {
       const el = document.getElementById(tab.id);
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, []);
+  }, [isDigestPage]);
+
+  const handleScrollTab = (id: string) => {
+    if (isDigestPage) {
+      navigate(`/#${id}`);
+    } else {
+      scrollToSection(id);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-20 backdrop-blur bg-ink-950/80 border-b border-ink-700">
@@ -81,13 +95,13 @@ export const TopNav = ({ input, onInputChange, onSubmit }: Props) => {
           </form>
         </div>
         <nav className="flex items-center gap-1 text-sm text-zinc-400">
-          {TABS.map((tab) => (
+          {SCROLL_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
-              onClick={() => scrollToSection(tab.id)}
+              onClick={() => handleScrollTab(tab.id)}
               className={`px-3 py-1.5 rounded-md transition-colors ${
-                active === tab.id
+                !isDigestPage && activeSection === tab.id
                   ? 'text-zinc-100 bg-ink-800'
                   : 'hover:bg-ink-800 hover:text-zinc-200'
               }`}
@@ -95,6 +109,17 @@ export const TopNav = ({ input, onInputChange, onSubmit }: Props) => {
               {tab.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => navigate('/digest')}
+            className={`px-3 py-1.5 rounded-md transition-colors ${
+              isDigestPage
+                ? 'text-zinc-100 bg-ink-800'
+                : 'hover:bg-ink-800 hover:text-zinc-200'
+            }`}
+          >
+            AI 解讀
+          </button>
         </nav>
         <button
           type="button"
