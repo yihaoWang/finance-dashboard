@@ -14,7 +14,7 @@ export const StockDetail = ({ symbol }: Props) => {
   if (error) return <div className="text-down p-6">錯誤：{(error as Error).message}</div>;
   if (!data) return null;
 
-  const { quote, kpi, history } = data.data;
+  const { quote, kpi, history, chips } = data.data;
 
   return (
     <>
@@ -24,7 +24,7 @@ export const StockDetail = ({ symbol }: Props) => {
         <PriceChart price={quote.price} high52w={quote.high52w} low52w={quote.low52w} history={history} />
         <MacroPanel />
       </section>
-      <AnalysisPanels kpi={kpi} quote={quote} />
+      <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
       {data.warnings && (
         <div className="mt-3 text-xs text-amber-400">注意：{data.warnings.join(', ')}</div>
       )}

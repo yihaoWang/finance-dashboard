@@ -1,4 +1,4 @@
-import type { Kpi, Quote } from '@fd/shared';
+import type { Chips, Kpi, Quote } from '@fd/shared';
 import { MetricLabel } from './MetricLabel';
 
 const Bar = ({ value, max, tone = 'mute' }: { value: number; max: number; tone?: 'up' | 'down' | 'mute' }) => {
@@ -11,9 +11,35 @@ const Bar = ({ value, max, tone = 'mute' }: { value: number; max: number; tone?:
   );
 };
 
-type Props = { kpi: Kpi; quote: Quote };
+const formatLots = (shares: number): string => {
+  const lots = shares / 1000;
+  const sign = lots >= 0 ? '+' : '';
+  return `${sign}${lots.toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`;
+};
 
-export const AnalysisPanels = ({ kpi, quote }: Props) => (
+type ChipRowProps = { label: string; net: number | undefined };
+
+const ChipRow = ({ label, net }: ChipRowProps) => {
+  if (net === undefined) {
+    return (
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-zinc-400">{label}</span>
+        <span className="num text-zinc-500">— 張</span>
+      </div>
+    );
+  }
+  const isPositive = net >= 0;
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-zinc-400">{label}</span>
+      <span className={`num ${isPositive ? 'text-up' : 'text-down'}`}>{formatLots(net)}</span>
+    </div>
+  );
+};
+
+type Props = { kpi: Kpi; quote: Quote; chips: Chips };
+
+export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
   <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
     <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5">
       <h2 className="font-medium text-zinc-100 mb-4">基本面</h2>
@@ -49,18 +75,17 @@ export const AnalysisPanels = ({ kpi, quote }: Props) => (
 
     <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5">
       <h2 className="font-medium text-zinc-100 mb-4">籌碼面</h2>
-      <div className="space-y-3 text-sm text-zinc-500">
-        <div className="text-xs">三大法人 / 融資融券 / 外資持股</div>
-        <div className="text-xs">將以 TWSE T86 + MARGN + QFIIS 串接（Phase 2）</div>
+      <div className="space-y-3 text-sm text-zinc-500 mb-1">
+        <div className="text-xs">三大法人買賣超（張）</div>
       </div>
-      <div className="space-y-3 mt-4">
-        {['外資', '投信', '自營商'].map((k) => (
-          <div key={k} className="flex justify-between items-center text-sm">
-            <span className="text-zinc-400">{k}</span>
-            <span className="num text-zinc-500">— 張</span>
-          </div>
-        ))}
+      <div className="space-y-3 mt-3">
+        <ChipRow label="外資" net={chips?.foreignNet} />
+        <ChipRow label="投信" net={chips?.trustNet} />
+        <ChipRow label="自營商" net={chips?.dealerNet} />
       </div>
+      {chips && (
+        <div className="mt-3 text-xs text-zinc-600">資料日期：{chips.date}</div>
+      )}
     </div>
 
     <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5">

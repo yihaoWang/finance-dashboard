@@ -6,6 +6,7 @@ import { kvGetJson, kvPutJson } from '../cache/kv';
 import { upsertDailyPrices, recentCloses, recentDailyPrices } from '../cache/d1';
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
 import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
+import { fetchTwseChips } from '../sources/twse-chips';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
 
@@ -75,10 +76,19 @@ stock.get('/:symbol', async (c) => {
     warnings.push('revenue_unavailable');
   }
 
+  let chips = null;
+  try {
+    chips = await fetchTwseChips(c.env.KV, symbol);
+  } catch (err) {
+    console.warn('twse chips failed for symbol', symbol, err);
+    warnings.push('chips_unavailable');
+  }
+
   const derivedEps =
     twse?.pe && twse.pe > 0 && quote.price > 0 ? quote.price / twse.pe : null;
 
   const bundle: StockBundle = {
+    chips,
     history: priceHistory,
     quote: {
       symbol: quote.symbol,

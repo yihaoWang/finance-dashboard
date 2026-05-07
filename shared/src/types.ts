@@ -21,7 +21,15 @@ export type Kpi = {
 };
 
 export type PricePoint = { date: string; close: number };
-export type StockBundle = { quote: Quote; kpi: Kpi; history: PricePoint[] };
+
+export type Chips = {
+  date: string;
+  foreignNet: number;
+  trustNet: number;
+  dealerNet: number;
+} | null;
+
+export type StockBundle = { quote: Quote; kpi: Kpi; history: PricePoint[]; chips: Chips };
 
 export type Freshness = {
   source: 'kv' | 'd1' | 'fetch';

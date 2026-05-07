@@ -103,6 +103,17 @@ test.describe('Dashboard E2E', () => {
     expect(changeText).toMatch(/[+-]?\d/);
   });
 
+  test('shows 籌碼面 panel with 外資 row', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '籌碼面' })).toBeVisible();
+    const foreignRow = page.locator('div', { hasText: '外資' }).filter({ has: page.locator('.num') }).first();
+    await expect(foreignRow).toBeVisible();
+    const netText = (await foreignRow.locator('.num').first().textContent()) ?? '';
+    // Should show a number of lots (張), not just a dash
+    expect(netText).toMatch(/[+\-]?\d/);
+  });
+
   test('symbol code 2330 visible next to title', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });

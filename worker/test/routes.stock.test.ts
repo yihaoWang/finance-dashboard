@@ -3,6 +3,7 @@ import { env, applyD1Migrations } from 'cloudflare:test';
 import app from '../src/index';
 import * as yahoo from '../src/sources/yahoo';
 import * as twse from '../src/sources/twse';
+import * as twseChips from '../src/sources/twse-chips';
 
 describe('GET /api/stock/:symbol', () => {
   beforeEach(async () => {
@@ -10,6 +11,7 @@ describe('GET /api/stock/:symbol', () => {
     vi.restoreAllMocks();
     vi.spyOn(twse, 'fetchTwseBwibbu').mockResolvedValue(null);
     vi.spyOn(twse, 'fetchTwseMonthlyRevenue').mockResolvedValue(null);
+    vi.spyOn(twseChips, 'fetchTwseChips').mockResolvedValue(null);
   });
 
   it('rejects invalid symbol', async () => {
