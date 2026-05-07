@@ -145,6 +145,36 @@ test.describe('Dashboard E2E', () => {
     await expect(svg).toBeVisible({ timeout: 15_000 });
   });
 
+  test('shows RSI value in 技術面 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '技術面' })).toBeVisible();
+    const rsiLabel = page.getByText('RSI(14)', { exact: true }).first();
+    await expect(rsiLabel).toBeVisible();
+    const rsiRow = page.locator('div.flex.justify-between', { has: rsiLabel }).first();
+    const valueSpan = rsiRow.locator('span.num').first();
+    const valueText = (await valueSpan.textContent())?.trim() ?? '';
+    if (valueText !== '—') {
+      expect(Number(valueText)).toBeGreaterThanOrEqual(0);
+      expect(Number(valueText)).toBeLessThanOrEqual(100);
+    }
+  });
+
+  test('shows MACD signal pill in 技術面 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '技術面' })).toBeVisible();
+    const pill = page.locator('span', { hasText: /^(偏多|偏空|中性)$/ }).first();
+    await expect(pill).toBeVisible();
+  });
+
+  test('shows 支撐 and 壓力 numbers in 技術面 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('支撐', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('壓力', { exact: true }).first()).toBeVisible();
+  });
+
   test('input is preloaded with 2330', async ({ page }) => {
     await page.goto('/');
     const input = page.getByPlaceholder(/輸入股票代號/);

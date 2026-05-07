@@ -79,6 +79,36 @@ export const GLOSSARY: Record<string, Term> = {
       return `${v > 0 ? '+' : ''}${fmt(v, 2, '%')} 中性`;
     },
   },
+  macd: {
+    name: 'MACD（指數平滑異同移動平均）',
+    definition: '12 日 EMA − 26 日 EMA。正值偏多，負值偏空。',
+    interpret: (v) => {
+      if (v === null) return '尚無資料';
+      if (v > 0.5) return `${fmt(v)} 偏多`;
+      if (v < -0.5) return `${fmt(v)} 偏空`;
+      return `${fmt(v)} 中性`;
+    },
+  },
+  resistance: {
+    name: '壓力',
+    definition: '近 20 日最高收盤，上檔可能遇阻。',
+    interpret: (v) => (v === null ? '尚無資料' : `${fmt(v, 0)} 元`),
+  },
+  rsi14: {
+    name: 'RSI(14)',
+    definition: '14 日相對強弱指標，0~100。>70 超買，<30 超賣。',
+    interpret: (v) => {
+      if (v === null) return '尚無資料';
+      if (v > 70) return `${fmt(v, 1)} 超買，注意短線回檔`;
+      if (v < 30) return `${fmt(v, 1)} 超賣，可能反彈`;
+      return `${fmt(v, 1)} 中性`;
+    },
+  },
+  support: {
+    name: '支撐',
+    definition: '近 20 日最低收盤，下檔可能反彈點。',
+    interpret: (v) => (v === null ? '尚無資料' : `${fmt(v, 0)} 元`),
+  },
   marketCap: {
     name: '市值',
     definition: '股價 × 流通股數。代表整家公司在市場上的總價值，直接看公司規模。',

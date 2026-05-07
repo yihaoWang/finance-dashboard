@@ -131,6 +131,63 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
             tone={kpi.ma20Deviation !== null && Math.abs(kpi.ma20Deviation) > 10 ? 'down' : 'up'}
           />
         </div>
+
+        <div className="pt-3 border-t border-ink-700 space-y-3">
+          <div>
+            <div className="flex justify-between mb-1">
+              <MetricLabel term="rsi14" value={kpi.rsi14} className="text-zinc-400" />
+              <span className={`num ${kpi.rsi14 === null ? 'text-zinc-500' : kpi.rsi14 > 70 ? 'text-down' : kpi.rsi14 < 30 ? 'text-up' : 'text-zinc-200'}`}>
+                {kpi.rsi14 === null ? '—' : kpi.rsi14.toFixed(1)}
+              </span>
+            </div>
+            {kpi.rsi14 !== null && (
+              <div className="relative bg-ink-800 h-1 rounded">
+                <div className="absolute top-0 left-[30%] w-px h-1 bg-zinc-600" />
+                <div className="absolute top-0 left-[70%] w-px h-1 bg-zinc-600" />
+                <div
+                  className={`h-1 rounded ${kpi.rsi14 > 70 ? 'bg-down' : kpi.rsi14 < 30 ? 'bg-up' : 'bg-accent'}`}
+                  style={{ width: `${Math.min(100, kpi.rsi14)}%` }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center">
+            <MetricLabel term="macd" value={kpi.macd} className="text-zinc-400" />
+            <div className="flex items-center gap-2">
+              {kpi.macd !== null && (
+                <span className="num text-zinc-300 text-xs">{kpi.macd.toFixed(2)}</span>
+              )}
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                kpi.macdSignal === 'bullish' ? 'bg-up/20 text-up' :
+                kpi.macdSignal === 'bearish' ? 'bg-down/20 text-down' :
+                'bg-zinc-700 text-zinc-400'
+              }`}>
+                {kpi.macdSignal === 'bullish' ? '偏多' : kpi.macdSignal === 'bearish' ? '偏空' : '中性'}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <MetricLabel term="support" value={kpi.support} className="text-zinc-400" />
+              <span className="num text-up text-xs">{kpi.support === null ? '—' : kpi.support.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <MetricLabel term="resistance" value={kpi.resistance} className="text-zinc-400" />
+              <span className="num text-down text-xs">{kpi.resistance === null ? '—' : kpi.resistance.toFixed(0)}</span>
+            </div>
+            {kpi.support !== null && kpi.resistance !== null && kpi.support < kpi.resistance && (
+              <div className="relative bg-ink-800 h-1 rounded mt-1">
+                <div
+                  className="absolute top-[-2px] w-1.5 h-1.5 rounded-full bg-zinc-100 -translate-x-1/2"
+                  style={{ left: `${Math.min(100, Math.max(0, ((quote.price - kpi.support) / (kpi.resistance - kpi.support)) * 100))}%` }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="pt-3 border-t border-ink-700">
           <div className="text-xs text-zinc-500 mb-1">52W 區間</div>
           <div className="flex justify-between text-sm">
@@ -139,7 +196,6 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
             <span className="num text-up">{quote.high52w?.toFixed(0) ?? '—'}</span>
           </div>
         </div>
-        <div className="text-xs text-zinc-500 pt-2">RSI / MACD / 支撐壓力（Phase 2）</div>
       </div>
     </div>
   </section>

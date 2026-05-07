@@ -10,6 +10,9 @@ import { fetchTwseChips } from '../sources/twse-chips';
 import { fetchQuarterlyFinancials } from '../sources/finmind';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
+import { rsi } from '../indicators/rsi';
+import { macd } from '../indicators/macd';
+import { supportResistance } from '../indicators/range';
 
 const QUOTE_TTL = 60;
 
@@ -44,12 +47,12 @@ stock.get('/:symbol', async (c) => {
     return c.json({ error: 'upstream_failed' }, 502);
   }
 
-  let closes = await recentCloses(c.env.DB, symbol, 20);
+  let closes = await recentCloses(c.env.DB, symbol, 60);
   if (closes.length < 20) {
     try {
       const history = await fetchYahooHistory(symbol, '3mo');
       await upsertDailyPrices(c.env.DB, symbol, history);
-      closes = await recentCloses(c.env.DB, symbol, 20);
+      closes = await recentCloses(c.env.DB, symbol, 60);
     } catch (err) {
       console.warn('yahoo history failed for symbol', symbol, err);
       warnings.push('history_unavailable');
@@ -60,6 +63,9 @@ stock.get('/:symbol', async (c) => {
 
   const ma20 = sma(closes, 20);
   const ma20Deviation = deviation(quote.price, ma20);
+  const rsi14 = rsi(closes, 14);
+  const macdResult = macd(closes);
+  const sr = supportResistance(closes, 20);
 
   let twse = null;
   try {
@@ -112,15 +118,20 @@ stock.get('/:symbol', async (c) => {
       updatedAt: Date.now(),
     },
     kpi: {
-      pe: twse?.pe ?? quote.pe,
-      forwardPe: quote.forwardPe,
-      ttmEps: quote.ttmEps ?? derivedEps,
-      grossMargin: financials?.grossMargin ?? null,
-      opMargin: financials?.opMargin ?? null,
-      netMargin: financials?.netMargin ?? null,
-      roe: financials?.roe ?? null,
-      monthlyRevenueYoy: revenue?.yoy ?? null,
+      macd: macdResult.macd,
+      macdSignal: macdResult.signal,
       ma20Deviation,
+      grossMargin: financials?.grossMargin ?? null,
+      forwardPe: quote.forwardPe,
+      monthlyRevenueYoy: revenue?.yoy ?? null,
+      netMargin: financials?.netMargin ?? null,
+      opMargin: financials?.opMargin ?? null,
+      pe: twse?.pe ?? quote.pe,
+      resistance: sr?.resistance ?? null,
+      roe: financials?.roe ?? null,
+      rsi14,
+      support: sr?.support ?? null,
+      ttmEps: quote.ttmEps ?? derivedEps,
     },
   };
 

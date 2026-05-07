@@ -12,15 +12,20 @@ export type Quote = {
 };
 
 export type Kpi = {
-  pe: number | null;
-  forwardPe: number | null;
-  ttmEps: number | null;
-  grossMargin: number | null;
-  opMargin: number | null;
-  netMargin: number | null;
-  roe: number | null;
-  monthlyRevenueYoy: number | null;
+  macd: number | null;
+  macdSignal: 'bullish' | 'bearish' | 'neutral';
   ma20Deviation: number | null;
+  grossMargin: number | null;
+  forwardPe: number | null;
+  monthlyRevenueYoy: number | null;
+  netMargin: number | null;
+  opMargin: number | null;
+  pe: number | null;
+  resistance: number | null;
+  roe: number | null;
+  rsi14: number | null;
+  support: number | null;
+  ttmEps: number | null;
 };
 
 export type PricePoint = { date: string; close: number };
