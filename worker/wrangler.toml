@@ -16,4 +16,5 @@ id = "80030991dd4d4ce5a910c3cb71cce95e"
 binding = "AI"
 
 [triggers]
-crons = ["0 14 * * *"]
+# UTC 00:00 = 台北 08:00（台股開盤前 1 小時，已涵蓋前一晚美股 + 盤後新聞）
+crons = ["0 0 * * *"]
