@@ -1,5 +1,5 @@
 import type { Env } from '../index';
-import type { DigestBundle, DigestSource } from '@fd/shared';
+import type { DigestBundle, DigestScope, DigestSource } from '@fd/shared';
 import { fetchFredSnapshot } from '../sources/fred';
 import { fetchTwseBwibbu } from '../sources/twse';
 import { fetchTwseChips } from '../sources/twse-chips';
@@ -8,20 +8,32 @@ import { fetchYahooQuote } from '../sources/yahoo';
 import { SYSTEM_PROMPT, buildPrompt, parseSections } from './digest-prompt';
 import { upsertDigest } from '../cache/d1-digests';
 
-export type RunArgs = { scope: 'market' | 'stock'; symbol: string };
+export type RunArgs = { scope: DigestScope; symbol: string };
+
+export type DigestPayload = {
+  system: string;
+  user: string;
+  sources: DigestSource[];
+  scope: DigestScope;
+  symbol: string;
+  date: string;
+};
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 const MARKET_NEWS_SYMBOLS = ['2330', '2454'];
 
-export const runDigestPipeline = async (env: Env, args: RunArgs): Promise<DigestBundle> => {
+export const gatherDigestPayload = async (
+  env: Pick<Env, 'KV' | 'FRED_API_KEY'>,
+  args: RunArgs,
+): Promise<DigestPayload> => {
   const { scope, symbol } = args;
   const date = new Date().toISOString().slice(0, 10);
   const now = Date.now();
 
   const sources: DigestSource[] = [];
 
-  // 1. Fetch all data in parallel
+  // Fetch all data in parallel
   const newsSymbol = scope === 'stock' ? symbol : (MARKET_NEWS_SYMBOLS[0] ?? '2330');
 
   const [fredResult, twseMarketResult, chipsResult, newsResult, quoteResult] =
@@ -74,24 +86,31 @@ export const runDigestPipeline = async (env: Env, args: RunArgs): Promise<Digest
     });
   }
 
-  // 2. Assemble prompt
-  const prompt = buildPrompt({ scope, symbol, date, fred, twseMarket, chips, news: news ?? [], quote });
+  const user = buildPrompt({ scope, symbol, date, fred, twseMarket, chips, news: news ?? [], quote });
 
-  // 3. Call Workers AI
+  return { system: SYSTEM_PROMPT, user, sources, scope, symbol, date };
+};
+
+export const runDigestPipeline = async (env: Env, args: RunArgs): Promise<DigestBundle> => {
+  const payload = await gatherDigestPayload(env, args);
+  const { system, user, sources, scope, symbol, date } = payload;
+  const now = Date.now();
+
+  // Call Workers AI
   const aiResponse = await env.AI.run(MODEL, {
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
+      { role: 'system', content: system },
+      { role: 'user', content: user },
     ],
     max_tokens: 1024,
   });
 
   const responseText = (aiResponse as { response: string }).response ?? '';
 
-  // 4. Parse sections
+  // Parse sections
   const sections = parseSections(responseText);
 
-  // 5. Upsert into D1
+  // Upsert into D1
   const bundle: DigestBundle = {
     date,
     scope,

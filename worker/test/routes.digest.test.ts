@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { env, applyD1Migrations } from 'cloudflare:test';
 import * as digestRunner from '../src/lib/digest-runner';
-import { upsertDigest } from '../src/cache/d1-digests';
+import { upsertDigest, getDigest } from '../src/cache/d1-digests';
 import type { Env } from '../src/index';
 import type { DigestBundle } from '@fd/shared';
+
+const DIGEST_TOKEN = 'test-secret-token';
 
 const makeEnv = (): Env => ({
   ...env,
   AI: { run: vi.fn() } as unknown as Ai,
+  DIGEST_TOKEN,
   FRED_API_KEY: 'test-key',
 });
 
@@ -152,6 +155,159 @@ describe('POST /api/digest/regenerate', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope: 'stock', symbol: 'bad!!' }),
+      }),
+      makeEnv(),
+    );
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('GET /api/digest/payload', () => {
+  beforeEach(async () => {
+    await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+    vi.restoreAllMocks();
+  });
+
+  it('returns payload shape for market scope', async () => {
+    vi.spyOn(digestRunner, 'gatherDigestPayload').mockResolvedValue({
+      system: 'sys prompt',
+      user: 'user prompt',
+      sources: [{ name: 'FRED DGS10', url: 'https://example.com', timestamp: Date.now() }],
+      scope: 'market',
+      symbol: 'market',
+      date: TODAY,
+    });
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/payload?scope=market'),
+      makeEnv(),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: { system: string; user: string; sources: unknown[]; scope: string; symbol: string; date: string } };
+    expect(body.data.scope).toBe('market');
+    expect(body.data.symbol).toBe('market');
+    expect(typeof body.data.system).toBe('string');
+    expect(typeof body.data.user).toBe('string');
+    expect(Array.isArray(body.data.sources)).toBe(true);
+    expect(typeof body.data.date).toBe('string');
+  });
+
+  it('returns payload shape for stock scope', async () => {
+    vi.spyOn(digestRunner, 'gatherDigestPayload').mockResolvedValue({
+      system: 'sys prompt',
+      user: 'user prompt for 2330',
+      sources: [],
+      scope: 'stock',
+      symbol: '2330',
+      date: TODAY,
+    });
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/payload?scope=stock&symbol=2330'),
+      makeEnv(),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: { scope: string; symbol: string } };
+    expect(body.data.scope).toBe('stock');
+    expect(body.data.symbol).toBe('2330');
+  });
+
+  it('returns 400 for invalid symbol in stock scope', async () => {
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/payload?scope=stock&symbol=bad!!'),
+      makeEnv(),
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('invalid_symbol');
+  });
+});
+
+describe('POST /api/digest/upsert', () => {
+  beforeEach(async () => {
+    await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
+    vi.restoreAllMocks();
+  });
+
+  const validBody = {
+    scope: 'market',
+    symbol: 'market',
+    date: TODAY,
+    response: '## 硬數據\n數據段。\n## 框架解讀\n解讀段。\n## 情緒\n情緒段。',
+    model: 'claude-sonnet',
+    sources: [{ name: 'FRED', url: 'https://fred.stlouisfed.org', timestamp: Date.now() }],
+  };
+
+  it('returns 401 without auth header', async () => {
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validBody),
+      }),
+      makeEnv(),
+    );
+    expect(res.status).toBe(401);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('unauthorized');
+  });
+
+  it('returns 401 with wrong token', async () => {
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer wrong-token' },
+        body: JSON.stringify(validBody),
+      }),
+      makeEnv(),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 200 with correct auth and writes D1', async () => {
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DIGEST_TOKEN}` },
+        body: JSON.stringify(validBody),
+      }),
+      makeEnv(),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: DigestBundle };
+    expect(body.data.scope).toBe('market');
+    expect(body.data.sections.hard_data).toContain('數據段');
+
+    // Verify D1 row was written
+    const row = await getDigest(env.DB, 'market', 'market', TODAY);
+    expect(row).not.toBeNull();
+    expect(row?.model).toBe('claude-sonnet');
+  });
+
+  it('returns 400 for invalid JSON body', async () => {
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DIGEST_TOKEN}` },
+        body: 'not-json',
+      }),
+      makeEnv(),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for missing required fields', async () => {
+    const app = await getApp();
+    const res = await app.fetch(
+      new Request('http://localhost/api/digest/upsert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DIGEST_TOKEN}` },
+        body: JSON.stringify({ scope: 'market' }),
       }),
       makeEnv(),
     );

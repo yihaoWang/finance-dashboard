@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
-import type { ApiResponse, DigestBundle, DigestHistoryItem, DigestScope } from '@fd/shared';
+import type { ApiResponse, DigestBundle, DigestHistoryItem, DigestScope, DigestSource } from '@fd/shared';
 import { validateSymbol } from '../lib/symbol';
-import { getDigest, listDigestHistory } from '../cache/d1-digests';
-import { runDigestPipeline } from '../lib/digest-runner';
+import { getDigest, listDigestHistory, upsertDigest } from '../cache/d1-digests';
+import { gatherDigestPayload, runDigestPipeline } from '../lib/digest-runner';
+import type { DigestPayload } from '../lib/digest-runner';
 
 export const digest = new Hono<{ Bindings: Env }>();
 
@@ -77,6 +78,94 @@ digest.post('/regenerate', async (c) => {
   }
 
   const bundle = await runDigestPipeline(c.env, { scope, symbol });
+  const responseBody: ApiResponse<DigestBundle> = {
+    data: bundle,
+    freshness: { source: 'fetch', ageSeconds: 0 },
+  };
+  return c.json(responseBody);
+});
+
+// GET /api/digest/payload?scope=market|stock&symbol=XXXX — gather data payload for local LLM
+digest.get('/payload', async (c) => {
+  const scopeRaw = c.req.query('scope');
+  const symbolRaw = c.req.query('symbol') ?? '';
+
+  const scope: DigestScope = scopeRaw === 'stock' ? 'stock' : 'market';
+
+  let symbol: string;
+  if (scope === 'stock') {
+    try {
+      symbol = validateSymbol(symbolRaw);
+    } catch {
+      return c.json({ error: 'invalid_symbol' }, 400);
+    }
+  } else {
+    symbol = 'market';
+  }
+
+  const payload = await gatherDigestPayload(c.env, { scope, symbol });
+  const body: ApiResponse<DigestPayload> = {
+    data: payload,
+    freshness: { source: 'fetch', ageSeconds: 0 },
+  };
+  return c.json(body);
+});
+
+// POST /api/digest/upsert — receive local LLM response and write to D1 (Bearer auth)
+digest.post('/upsert', async (c) => {
+  const authHeader = c.req.header('Authorization');
+  const token = c.env.DIGEST_TOKEN;
+  if (!token || authHeader !== `Bearer ${token}`) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'invalid_json' }, 400);
+  }
+
+  const parsed = body as Record<string, unknown>;
+  const scopeRaw = parsed['scope'];
+  const symbolRaw = parsed['symbol'];
+  const dateRaw = parsed['date'];
+  const responseRaw = parsed['response'];
+  const modelRaw = parsed['model'];
+  const sourcesRaw = parsed['sources'];
+
+  if (typeof scopeRaw !== 'string' || typeof symbolRaw !== 'string' || typeof dateRaw !== 'string' || typeof responseRaw !== 'string' || typeof modelRaw !== 'string' || !Array.isArray(sourcesRaw)) {
+    return c.json({ error: 'invalid_body' }, 400);
+  }
+
+  const scope: DigestScope = scopeRaw === 'stock' ? 'stock' : 'market';
+
+  let symbol: string;
+  if (scope === 'stock') {
+    try {
+      symbol = validateSymbol(symbolRaw);
+    } catch {
+      return c.json({ error: 'invalid_symbol' }, 400);
+    }
+  } else {
+    symbol = 'market';
+  }
+
+  const { parseSections } = await import('../lib/digest-prompt');
+  const sections = parseSections(responseRaw);
+
+  const bundle: DigestBundle = {
+    date: dateRaw,
+    scope,
+    symbol,
+    sections,
+    sources: sourcesRaw as DigestSource[],
+    model: modelRaw,
+    createdAt: Date.now(),
+  };
+
+  await upsertDigest(c.env.DB, bundle);
+
   const responseBody: ApiResponse<DigestBundle> = {
     data: bundle,
     freshness: { source: 'fetch', ageSeconds: 0 },

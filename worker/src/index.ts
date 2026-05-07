@@ -11,6 +11,7 @@ import { scheduled } from './cron';
 export type Env = {
   AI: Ai;
   DB: D1Database;
+  DIGEST_TOKEN?: string;
   FRED_API_KEY?: string;
   KV: KVNamespace;
   YAHOO_USER_AGENT?: string;
