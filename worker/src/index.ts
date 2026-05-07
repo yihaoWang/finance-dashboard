@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { health } from './routes/health';
+import { macro } from './routes/macro';
 import { stock } from './routes/stock';
 
 export type Env = {
@@ -25,6 +26,7 @@ app.use(
 );
 
 app.route('/api/health', health);
+app.route('/api/macro', macro);
 app.route('/api/stock', stock);
 
 export default app;

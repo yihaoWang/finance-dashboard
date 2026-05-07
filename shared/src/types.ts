@@ -27,6 +27,15 @@ export type Freshness = {
   ageSeconds: number;
 };
 
+export type MacroQuote = { value: number; changePct: number };
+export type MacroBundle = {
+  us10y: MacroQuote | null;
+  vix: MacroQuote | null;
+  sox: MacroQuote | null;
+  dxy: MacroQuote | null;
+  twd: MacroQuote | null;
+};
+
 export type ApiResponse<T> = {
   data: T;
   freshness: Freshness;
