@@ -192,6 +192,22 @@ test.describe('Dashboard E2E', () => {
     await expect(input).toHaveValue('2330');
   });
 
+  test('shows 融資餘額 row in 籌碼面 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '籌碼面' })).toBeVisible();
+    const label = page.getByText('融資', { exact: false }).first();
+    await expect(label).toBeVisible();
+  });
+
+  test('shows 外資持股 percentage in 籌碼面 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '籌碼面' })).toBeVisible();
+    const label = page.getByText('外資持股比', { exact: false }).first();
+    await expect(label).toBeVisible();
+  });
+
   test('searching non-existent 4-digit symbol surfaces an error', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });

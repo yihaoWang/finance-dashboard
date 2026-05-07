@@ -35,6 +35,9 @@ export type Chips = {
   foreignNet: number;
   trustNet: number;
   dealerNet: number;
+  financingBalance: number | null;
+  shortBalance: number | null;
+  foreignHoldingPct: number | null;
 } | null;
 
 export type StockBundle = { quote: Quote; kpi: Kpi; history: PricePoint[]; chips: Chips };

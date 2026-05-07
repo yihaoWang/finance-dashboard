@@ -7,6 +7,7 @@ import { upsertDailyPrices, recentCloses, recentDailyPrices } from '../cache/d1'
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
 import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
 import { fetchTwseChips } from '../sources/twse-chips';
+import { fetchTwseMargin, fetchTwseForeignHolding } from '../sources/twse-margin';
 import { fetchQuarterlyFinancials } from '../sources/finmind';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
@@ -83,11 +84,35 @@ stock.get('/:symbol', async (c) => {
     warnings.push('revenue_unavailable');
   }
 
+  const [chipsResult, marginResult, foreignResult] = await Promise.allSettled([
+    fetchTwseChips(c.env.KV, symbol),
+    fetchTwseMargin(c.env.KV, symbol),
+    fetchTwseForeignHolding(c.env.KV, symbol),
+  ]);
+
   let chips = null;
-  try {
-    chips = await fetchTwseChips(c.env.KV, symbol);
-  } catch (err) {
-    console.warn('twse chips failed for symbol', symbol, err);
+  if (chipsResult.status === 'fulfilled') {
+    const base = chipsResult.value;
+    const margin = marginResult.status === 'fulfilled' ? marginResult.value : null;
+    const foreign = foreignResult.status === 'fulfilled' ? foreignResult.value : null;
+    if (margin === null && marginResult.status === 'rejected') {
+      console.warn('twse margin failed for symbol', symbol, marginResult.reason);
+      warnings.push('margin_unavailable');
+    }
+    if (foreign === null && foreignResult.status === 'rejected') {
+      console.warn('twse foreign holding failed for symbol', symbol, foreignResult.reason);
+      warnings.push('foreign_holding_unavailable');
+    }
+    if (base !== null) {
+      chips = {
+        ...base,
+        financingBalance: margin?.financingBalance ?? null,
+        shortBalance: margin?.shortBalance ?? null,
+        foreignHoldingPct: foreign?.holdingPct ?? null,
+      };
+    }
+  } else {
+    console.warn('twse chips failed for symbol', symbol, chipsResult.reason);
     warnings.push('chips_unavailable');
   }
 

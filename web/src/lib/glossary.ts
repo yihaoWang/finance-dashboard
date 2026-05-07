@@ -121,4 +121,16 @@ export const GLOSSARY: Record<string, Term> = {
     name: '52 週高點 / 低點',
     definition: '近一年內的最高與最低成交價，看現價在年度區間的相對位置。',
   },
+  financingBalance: {
+    name: '融資餘額（張）',
+    definition: '尚未償還的融資買進部位。融資增加代表多方力量增強；急速上升要小心斷頭風險。',
+  },
+  shortBalance: {
+    name: '融券餘額（張）',
+    definition: '尚未回補的融券賣出部位。券增代表空方力量；高券資比可能引發軋空。',
+  },
+  foreignHoldingPct: {
+    name: '外資持股比（%）',
+    definition: '外資持有公司股本比例。台股大型權值股通常 > 50%，反映外資對個股的長期看法。',
+  },
 };

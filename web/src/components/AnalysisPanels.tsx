@@ -110,6 +110,30 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
         <ChipRow label="投信" net={chips?.trustNet} />
         <ChipRow label="自營商" net={chips?.dealerNet} />
       </div>
+      <div className="mt-4 pt-3 border-t border-ink-700 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <MetricLabel term="financingBalance" className="text-xs text-zinc-500" />
+          <div className="num text-zinc-200 mt-0.5">
+            {chips?.financingBalance != null
+              ? `${(chips.financingBalance / 1000).toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`
+              : '—'}
+          </div>
+        </div>
+        <div>
+          <MetricLabel term="shortBalance" className="text-xs text-zinc-500" />
+          <div className="num text-zinc-200 mt-0.5">
+            {chips?.shortBalance != null
+              ? `${(chips.shortBalance / 1000).toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`
+              : '—'}
+          </div>
+        </div>
+        <div className="col-span-2">
+          <MetricLabel term="foreignHoldingPct" className="text-xs text-zinc-500" />
+          <div className="num text-zinc-200 mt-0.5">
+            {chips?.foreignHoldingPct != null ? `${chips.foreignHoldingPct.toFixed(1)}%` : '—'}
+          </div>
+        </div>
+      </div>
       {chips && (
         <div className="mt-3 text-xs text-zinc-600">資料日期：{chips.date}</div>
       )}
