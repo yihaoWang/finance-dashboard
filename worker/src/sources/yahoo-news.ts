@@ -3,53 +3,60 @@ import { fetchWithRetry } from '../lib/http';
 export type NewsItem = {
   title: string;
   publisher: string;
-  publishedAt: number; // unix ms
+  publishedAt: number;
   link: string;
 };
 
-type YahooNewsRaw = {
-  uuid: string;
-  title: string;
-  publisher: string;
-  link: string;
-  providerPublishTime: number; // unix seconds
-  type: string;
+type Opts = { fetcher?: typeof fetch };
+const UA = 'Mozilla/5.0 (compatible; FinanceDashboard/0.1)';
+
+const TITLE_RE = /<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/g;
+const LINK_RE = /<link>([\s\S]*?)<\/link>/g;
+const PUBDATE_RE = /<pubDate>([\s\S]*?)<\/pubDate>/g;
+const SOURCE_RE = /<source[^>]*>([\s\S]*?)<\/source>/g;
+
+const matchAll = (xml: string, re: RegExp): string[] => {
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  re.lastIndex = 0;
+  while ((m = re.exec(xml)) !== null) {
+    out.push(m[1].trim());
+  }
+  return out;
 };
-
-type YahooSearchResponse = {
-  news: YahooNewsRaw[];
-};
-
-type Opts = { fetcher?: typeof fetch; userAgent?: string };
-
-const DEFAULT_UA = 'Mozilla/5.0 (compatible; FinanceDashboard/0.1)';
 
 export const fetchYahooNews = async (
   symbol: string,
   opts: Opts = {},
 ): Promise<NewsItem[]> => {
-  const query = symbol.endsWith('.TW') ? symbol : `${symbol}.TW`;
-  const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&newsCount=20&quotesCount=0`;
+  const url = `https://tw.stock.yahoo.com/rss?s=${symbol}.TW`;
   const res = await fetchWithRetry(
     url,
-    {
-      headers: {
-        'User-Agent': opts.userAgent ?? DEFAULT_UA,
-        'Accept': 'application/json',
-      },
-    },
+    { headers: { 'User-Agent': UA, Accept: 'application/rss+xml,application/xml;q=0.9,*/*;q=0.8' } },
     { fetcher: opts.fetcher },
   );
-  const json = await res.json() as YahooSearchResponse;
-  const news = json.news ?? [];
-  return news
-    .filter((n) => n.type === 'STORY')
-    .map((n) => ({
-      title: n.title,
-      publisher: n.publisher,
-      publishedAt: n.providerPublishTime * 1000,
-      link: n.link,
+  const xml = await res.text();
+
+  // First title/link belong to <channel>; the rest belong to items.
+  const titles = matchAll(xml, TITLE_RE);
+  const links = matchAll(xml, LINK_RE);
+  const dates = matchAll(xml, PUBDATE_RE);
+  const sources = matchAll(xml, SOURCE_RE);
+
+  // TITLE_RE only matches CDATA titles — channel title is plain text, so all
+  // matched titles are item titles already.
+  const itemTitles = titles;
+  // Channel + image each have a <link>; items follow after. Take the last N
+  // where N = itemTitles.length to align with item titles.
+  const itemLinks = links.slice(-itemTitles.length);
+
+  return itemTitles
+    .map((title, i): NewsItem => ({
+      title,
+      publisher: sources[i] ?? 'Yahoo奇摩股市',
+      publishedAt: dates[i] ? Date.parse(dates[i]) : Date.now(),
+      link: itemLinks[i] ?? '',
     }))
-    .sort((a, b) => b.publishedAt - a.publishedAt)
+    .filter((n) => n.title && n.link)
     .slice(0, 15);
 };
