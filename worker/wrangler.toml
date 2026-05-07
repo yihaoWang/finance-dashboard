@@ -1,0 +1,13 @@
+name = "finance-dashboard-worker"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "finance_dashboard"
+database_id = "REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_AFTER_CREATE"
