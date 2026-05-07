@@ -10,7 +10,7 @@ import { upsertDigest } from '../cache/d1-digests';
 
 export type RunArgs = { scope: 'market' | 'stock'; symbol: string };
 
-const MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 const MARKET_NEWS_SYMBOLS = ['2330', '2454'];
 
