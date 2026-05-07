@@ -4,6 +4,7 @@ import app from '../src/index';
 import * as yahoo from '../src/sources/yahoo';
 import * as twse from '../src/sources/twse';
 import * as twseChips from '../src/sources/twse-chips';
+import * as finmind from '../src/sources/finmind';
 
 describe('GET /api/stock/:symbol', () => {
   beforeEach(async () => {
@@ -12,6 +13,7 @@ describe('GET /api/stock/:symbol', () => {
     vi.spyOn(twse, 'fetchTwseBwibbu').mockResolvedValue(null);
     vi.spyOn(twse, 'fetchTwseMonthlyRevenue').mockResolvedValue(null);
     vi.spyOn(twseChips, 'fetchTwseChips').mockResolvedValue(null);
+    vi.spyOn(finmind, 'fetchQuarterlyFinancials').mockResolvedValue(null);
   });
 
   it('rejects invalid symbol', async () => {

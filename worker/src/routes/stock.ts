@@ -7,6 +7,7 @@ import { upsertDailyPrices, recentCloses, recentDailyPrices } from '../cache/d1'
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
 import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
 import { fetchTwseChips } from '../sources/twse-chips';
+import { fetchQuarterlyFinancials } from '../sources/finmind';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
 
@@ -84,6 +85,14 @@ stock.get('/:symbol', async (c) => {
     warnings.push('chips_unavailable');
   }
 
+  let financials = null;
+  try {
+    financials = await fetchQuarterlyFinancials(c.env.KV, symbol);
+  } catch (err) {
+    console.warn('finmind financials failed for symbol', symbol, err);
+    warnings.push('financials_unavailable');
+  }
+
   const derivedEps =
     twse?.pe && twse.pe > 0 && quote.price > 0 ? quote.price / twse.pe : null;
 
@@ -106,7 +115,10 @@ stock.get('/:symbol', async (c) => {
       pe: twse?.pe ?? quote.pe,
       forwardPe: quote.forwardPe,
       ttmEps: quote.ttmEps ?? derivedEps,
-      grossMargin: null,
+      grossMargin: financials?.grossMargin ?? null,
+      opMargin: financials?.opMargin ?? null,
+      netMargin: financials?.netMargin ?? null,
+      roe: financials?.roe ?? null,
       monthlyRevenueYoy: revenue?.yoy ?? null,
       ma20Deviation,
     },

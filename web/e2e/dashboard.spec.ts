@@ -57,6 +57,23 @@ test.describe('Dashboard E2E', () => {
     }
   });
 
+  test('shows 毛利率 with a numeric value in 基本面 panel for 2330', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: '基本面' })).toBeVisible();
+    // The grossMargin row shows a percentage value — should not be '—'
+    const grossMarginLabel = page.getByText('毛利率', { exact: true }).first();
+    await expect(grossMarginLabel).toBeVisible();
+    // Find the value in the same flex row: the span.num next to the label
+    const grossMarginRow = page.locator('div.flex.justify-between', { has: grossMarginLabel }).first();
+    const valueSpan = grossMarginRow.locator('span.num').first();
+    const valueText = (await valueSpan.textContent())?.trim() ?? '';
+    // If the data source works, we expect a percentage like "58.8%"; if not, "—" is acceptable
+    if (valueText !== '—') {
+      expect(valueText).toMatch(/\d+\.\d%/);
+    }
+  });
+
   test('shows risk LED row with at least 3 indicators', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });

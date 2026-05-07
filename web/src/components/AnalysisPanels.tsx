@@ -51,6 +51,33 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
           </div>
           <Bar value={kpi.grossMargin ?? 0} max={80} />
         </div>
+        {kpi.opMargin !== null && (
+          <div>
+            <div className="flex justify-between mb-1">
+              <MetricLabel term="opMargin" value={kpi.opMargin} className="text-zinc-400" />
+              <span className="num text-zinc-200">{`${kpi.opMargin.toFixed(1)}%`}</span>
+            </div>
+            <Bar value={kpi.opMargin} max={60} />
+          </div>
+        )}
+        {kpi.netMargin !== null && (
+          <div>
+            <div className="flex justify-between mb-1">
+              <MetricLabel term="netMargin" value={kpi.netMargin} className="text-zinc-400" />
+              <span className="num text-zinc-200">{`${kpi.netMargin.toFixed(1)}%`}</span>
+            </div>
+            <Bar value={kpi.netMargin} max={60} />
+          </div>
+        )}
+        {kpi.roe !== null && (
+          <div>
+            <div className="flex justify-between mb-1">
+              <MetricLabel term="roe" value={kpi.roe} className="text-zinc-400" />
+              <span className="num text-zinc-200">{`${kpi.roe.toFixed(1)}%`}</span>
+            </div>
+            <Bar value={kpi.roe} max={50} />
+          </div>
+        )}
         <div>
           <div className="flex justify-between mb-1">
             <MetricLabel term="ttmEps" value={kpi.ttmEps} className="text-zinc-400" />

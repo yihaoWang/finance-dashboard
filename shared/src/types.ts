@@ -16,6 +16,9 @@ export type Kpi = {
   forwardPe: number | null;
   ttmEps: number | null;
   grossMargin: number | null;
+  opMargin: number | null;
+  netMargin: number | null;
+  roe: number | null;
   monthlyRevenueYoy: number | null;
   ma20Deviation: number | null;
 };

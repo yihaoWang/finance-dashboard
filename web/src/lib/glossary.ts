@@ -31,7 +31,32 @@ export const GLOSSARY: Record<string, Term> = {
   grossMargin: {
     name: '毛利率',
     definition: '(營收 − 營業成本) ÷ 營收。產品定價力與成本控制的綜合指標，越高代表產品越有議價力。',
-    interpret: (v) => (v === null ? '需要 MOPS 季報，Phase 2 補上' : fmt(v, 1, '%')),
+    interpret: (v) => (v === null ? '尚無資料' : fmt(v, 1, '%')),
+  },
+  opMargin: {
+    name: '營益率（營業利益率）',
+    definition: '營業利益 ÷ 營收。扣除銷售與管理費用後的本業獲利能力，反映公司日常經營效率。',
+    interpret: (v) => {
+      if (v === null) return '尚無資料';
+      if (v > 20) return `${fmt(v, 1, '%')} 優異`;
+      if (v > 10) return `${fmt(v, 1, '%')} 良好`;
+      return `${fmt(v, 1, '%')} 偏低，需關注費用控制`;
+    },
+  },
+  netMargin: {
+    name: '淨利率（稅後純益率）',
+    definition: '稅後淨利 ÷ 營收。最終留存給股東的利潤比率，包含業外損益與稅務影響。',
+    interpret: (v) => (v === null ? '尚無資料' : fmt(v, 1, '%')),
+  },
+  roe: {
+    name: 'ROE（股東權益報酬率）',
+    definition: '年化稅後淨利 ÷ 股東權益。衡量公司用股東資本創造獲利的效率，巴菲特最重視的指標之一。',
+    interpret: (v) => {
+      if (v === null) return '尚無資料';
+      if (v > 20) return `${fmt(v, 1, '%')} 優異`;
+      if (v > 10) return `${fmt(v, 1, '%')} 良好`;
+      return `${fmt(v, 1, '%')} 偏低`;
+    },
   },
   monthlyRevenueYoy: {
     name: '月營收 YoY',
