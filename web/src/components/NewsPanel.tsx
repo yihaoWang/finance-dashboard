@@ -68,26 +68,40 @@ export const NewsPanel = ({ symbol }: Props) => {
         <p className="text-zinc-500 text-sm">暫無資料</p>
       )}
 
-      <ul className="space-y-3">
+      <ul className="divide-y divide-zinc-800">
         {filtered.map((item) => (
           <li key={item.link}>
             <a
               href={item.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-start gap-3 group"
+              className="flex items-start gap-3 group py-3 -mx-2 px-2 rounded-lg hover:bg-zinc-800/50 transition-colors"
             >
               <span
                 className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${SENTIMENT_DOT[item.sentiment]}`}
               />
-              <div className="min-w-0">
-                <p className="text-sm text-zinc-100 group-hover:text-white line-clamp-2 leading-snug">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-zinc-100 group-hover:text-accent-soft group-hover:underline underline-offset-2 decoration-accent/40 line-clamp-2 leading-snug">
                   {item.title}
                 </p>
-                <p className="text-xs text-zinc-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-1">
                   {item.publisher} · {ago(item.publishedAt)}
                 </p>
               </div>
+              <svg
+                className="mt-1 flex-shrink-0 w-3.5 h-3.5 text-zinc-600 group-hover:text-accent-soft"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
             </a>
           </li>
         ))}
