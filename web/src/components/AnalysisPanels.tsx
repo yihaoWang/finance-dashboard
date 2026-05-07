@@ -41,7 +41,7 @@ type Props = { kpi: Kpi; quote: Quote; chips: Chips };
 
 export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
   <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-    <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5">
+    <div id="fundamentals" className="rounded-2xl bg-ink-900 border border-ink-700 p-5 scroll-mt-24">
       <h2 className="font-medium text-zinc-100 mb-4">基本面</h2>
       <div className="space-y-4 text-sm">
         <div>
@@ -100,7 +100,7 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
       </div>
     </div>
 
-    <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5">
+    <div id="chips" className="rounded-2xl bg-ink-900 border border-ink-700 p-5 scroll-mt-24">
       <h2 className="font-medium text-zinc-100 mb-4">籌碼面</h2>
       <div className="space-y-3 text-sm text-zinc-500 mb-1">
         <div className="text-xs">三大法人買賣超（張）</div>
@@ -139,7 +139,7 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
       )}
     </div>
 
-    <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5">
+    <div id="technicals" className="rounded-2xl bg-ink-900 border border-ink-700 p-5 scroll-mt-24">
       <h2 className="font-medium text-zinc-100 mb-4">技術面</h2>
       <div className="space-y-3 text-sm">
         <div>

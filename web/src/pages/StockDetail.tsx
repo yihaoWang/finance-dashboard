@@ -19,11 +19,15 @@ export const StockDetail = ({ symbol }: Props) => {
 
   return (
     <>
-      <Hero quote={quote} kpi={kpi} />
-      <KpiGrid kpi={kpi} />
+      <div id="overview" className="scroll-mt-24">
+        <Hero quote={quote} kpi={kpi} />
+        <KpiGrid kpi={kpi} />
+      </div>
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
-        <MacroPanel />
+        <div id="macro" className="scroll-mt-24">
+          <MacroPanel />
+        </div>
       </section>
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
       <NewsPanel symbol={symbol} />
