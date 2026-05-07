@@ -25,6 +25,18 @@ export const upsertDailyPrices = async (
   );
 };
 
+export const recentDailyPrices = async (
+  db: D1Database,
+  symbol: string,
+  limit: number,
+): Promise<{ date: string; close: number }[]> => {
+  const res = await db
+    .prepare('SELECT date, close FROM daily_prices WHERE symbol = ? ORDER BY date DESC LIMIT ?')
+    .bind(symbol, limit)
+    .all<{ date: string; close: number }>();
+  return (res.results ?? []).reverse();
+};
+
 export const recentCloses = async (
   db: D1Database,
   symbol: string,

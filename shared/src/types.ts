@@ -20,7 +20,8 @@ export type Kpi = {
   ma20Deviation: number | null;
 };
 
-export type StockBundle = { quote: Quote; kpi: Kpi };
+export type PricePoint = { date: string; close: number };
+export type StockBundle = { quote: Quote; kpi: Kpi; history: PricePoint[] };
 
 export type Freshness = {
   source: 'kv' | 'd1' | 'fetch';

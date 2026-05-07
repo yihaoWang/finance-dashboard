@@ -33,13 +33,18 @@ describe('GET /api/stock/:symbol', () => {
     const res = await app.request('/api/stock/2330', {}, env);
     expect(res.status).toBe(200);
     const body = await res.json() as {
-      data: { quote: { symbol: string; price: number }; kpi: { pe: number | null; ma20Deviation: number | null } };
+      data: {
+        quote: { symbol: string; price: number };
+        kpi: { pe: number | null; ma20Deviation: number | null };
+        history: unknown[];
+      };
       freshness: { source: string };
     };
     expect(body.data.quote.symbol).toBe('2330');
     expect(body.data.quote.price).toBe(1085);
     expect(body.data.kpi.pe).toBe(27.4);
     expect(body.data.kpi.ma20Deviation).not.toBeNull();
+    expect(Array.isArray(body.data.history)).toBe(true);
     expect(body.freshness.source).toBe('fetch');
   });
 

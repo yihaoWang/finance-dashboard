@@ -14,14 +14,14 @@ export const StockDetail = ({ symbol }: Props) => {
   if (error) return <div className="text-down p-6">錯誤：{(error as Error).message}</div>;
   if (!data) return null;
 
-  const { quote, kpi } = data.data;
+  const { quote, kpi, history } = data.data;
 
   return (
     <>
       <Hero quote={quote} kpi={kpi} />
       <KpiGrid kpi={kpi} />
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <PriceChart price={quote.price} high52w={quote.high52w} low52w={quote.low52w} />
+        <PriceChart price={quote.price} high52w={quote.high52w} low52w={quote.low52w} history={history} />
         <MacroPanel />
       </section>
       <AnalysisPanels kpi={kpi} quote={quote} />

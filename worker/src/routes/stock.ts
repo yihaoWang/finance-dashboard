@@ -3,7 +3,7 @@ import type { Env } from '../index';
 import type { ApiResponse, StockBundle } from '@fd/shared';
 import { validateSymbol } from '../lib/symbol';
 import { kvGetJson, kvPutJson } from '../cache/kv';
-import { upsertDailyPrices, recentCloses } from '../cache/d1';
+import { upsertDailyPrices, recentCloses, recentDailyPrices } from '../cache/d1';
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
 import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
 import { sma } from '../indicators/ma';
@@ -54,6 +54,8 @@ stock.get('/:symbol', async (c) => {
     }
   }
 
+  const priceHistory = await recentDailyPrices(c.env.DB, symbol, 60);
+
   const ma20 = sma(closes, 20);
   const ma20Deviation = deviation(quote.price, ma20);
 
@@ -77,6 +79,7 @@ stock.get('/:symbol', async (c) => {
     twse?.pe && twse.pe > 0 && quote.price > 0 ? quote.price / twse.pe : null;
 
   const bundle: StockBundle = {
+    history: priceHistory,
     quote: {
       symbol: quote.symbol,
       name: twse?.name ?? quote.name,

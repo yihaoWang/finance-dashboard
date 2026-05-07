@@ -109,6 +109,14 @@ test.describe('Dashboard E2E', () => {
     await expect(page.getByText('2330').first()).toBeVisible();
   });
 
+  test('renders price chart svg', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    // recharts renders <svg> inside the chart container
+    const svg = page.locator('div', { hasText: '股價走勢' }).first().locator('svg').first();
+    await expect(svg).toBeVisible({ timeout: 15_000 });
+  });
+
   test('input is preloaded with 2330', async ({ page }) => {
     await page.goto('/');
     const input = page.getByPlaceholder(/輸入股票代號/);
