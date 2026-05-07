@@ -4,6 +4,7 @@ import { health } from './routes/health';
 import { history } from './routes/history';
 import { macro } from './routes/macro';
 import { stock } from './routes/stock';
+import { news } from './routes/news';
 
 export type Env = {
   DB: D1Database;
@@ -30,5 +31,6 @@ app.route('/api/health', health);
 app.route('/api/history', history);
 app.route('/api/macro', macro);
 app.route('/api/stock', stock);
+app.route('/api/news', news);
 
 export default app;

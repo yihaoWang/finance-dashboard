@@ -1,4 +1,4 @@
-import type { ApiResponse, MacroBundle, PricePoint, StockBundle } from '@fd/shared';
+import type { ApiResponse, MacroBundle, NewsBundle, PricePoint, StockBundle } from '@fd/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -21,4 +21,10 @@ export const fetchMacro = async (): Promise<ApiResponse<MacroBundle>> => {
   const res = await fetch(`${API_BASE}/api/macro`);
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<MacroBundle>>;
+};
+
+export const fetchNews = async (symbol: string): Promise<ApiResponse<NewsBundle>> => {
+  const res = await fetch(`${API_BASE}/api/news/${encodeURIComponent(symbol)}`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<NewsBundle>>;
 };

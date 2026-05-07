@@ -216,4 +216,18 @@ test.describe('Dashboard E2E', () => {
     await page.getByRole('button', { name: '查詢' }).click();
     await expect(page.getByText(/錯誤|api_error_/)).toBeVisible({ timeout: 15_000 });
   });
+
+  test('shows 消息面 panel', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: /消息面/ })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('news panel has sentiment filter pills', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: /消息面/ })).toBeVisible({ timeout: 15_000 });
+    const allPill = page.getByRole('button', { name: /全部/ });
+    await expect(allPill).toBeVisible({ timeout: 10_000 });
+  });
 });

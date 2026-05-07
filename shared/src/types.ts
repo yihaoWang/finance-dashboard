@@ -61,3 +61,15 @@ export type ApiResponse<T> = {
   freshness: Freshness;
   warnings?: string[];
 };
+
+export type SentimentT = 'positive' | 'negative' | 'neutral';
+
+export type NewsItem = {
+  title: string;
+  publisher: string;
+  publishedAt: number;
+  link: string;
+  sentiment: SentimentT;
+};
+
+export type NewsBundle = { items: NewsItem[] };

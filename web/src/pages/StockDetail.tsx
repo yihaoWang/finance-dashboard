@@ -4,6 +4,7 @@ import { KpiGrid } from '../components/KpiGrid';
 import { PriceChart } from '../components/PriceChart';
 import { MacroPanel } from '../components/MacroPanel';
 import { AnalysisPanels } from '../components/AnalysisPanels';
+import { NewsPanel } from '../components/NewsPanel';
 
 type Props = { symbol: string };
 
@@ -25,6 +26,7 @@ export const StockDetail = ({ symbol }: Props) => {
         <MacroPanel />
       </section>
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
+      <NewsPanel symbol={symbol} />
       {data.warnings && (
         <div className="mt-3 text-xs text-amber-400">注意：{data.warnings.join(', ')}</div>
       )}
