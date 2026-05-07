@@ -1,5 +1,7 @@
 import type { MacroQuote } from '@fd/shared';
 import { useMacro } from '../hooks/useMacro';
+import { MetricLabel } from './MetricLabel';
+import type { GLOSSARY } from '../lib/glossary';
 
 type RiskSignal = { label: string; color: string };
 
@@ -11,11 +13,11 @@ const getRiskSignal = (vix: MacroQuote | null | undefined): RiskSignal => {
 };
 
 type MacroRowProps = {
-  label: string;
+  term: keyof typeof GLOSSARY;
   quote: MacroQuote | null | undefined;
 };
 
-const MacroRow = ({ label, quote }: MacroRowProps) => {
+const MacroRow = ({ term, quote }: MacroRowProps) => {
   const hasData = quote !== null && quote !== undefined;
   const valueStr = hasData ? quote.value.toFixed(2) : '—';
   const changePctStr = hasData ? `${quote.changePct >= 0 ? '+' : ''}${quote.changePct.toFixed(2)}%` : '';
@@ -25,7 +27,7 @@ const MacroRow = ({ label, quote }: MacroRowProps) => {
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-zinc-400">{label}</span>
+      <MetricLabel term={term} value={hasData ? quote.value : null} className="text-zinc-400" />
       <div className="flex items-center gap-2">
         {hasData && (
           <span className={`num text-xs ${changeColor}`}>{changePctStr}</span>
@@ -48,11 +50,11 @@ export const MacroPanel = () => {
         {isLoading && <span className="text-[11px] text-zinc-500">載入中…</span>}
       </div>
       <div className="space-y-3 text-sm">
-        <MacroRow label="US 10Y" quote={bundle?.us10y} />
-        <MacroRow label="VIX" quote={bundle?.vix} />
-        <MacroRow label="SOX" quote={bundle?.sox} />
-        <MacroRow label="DXY" quote={bundle?.dxy} />
-        <MacroRow label="USD/TWD" quote={bundle?.twd} />
+        <MacroRow term="us10y" quote={bundle?.us10y} />
+        <MacroRow term="vix" quote={bundle?.vix} />
+        <MacroRow term="sox" quote={bundle?.sox} />
+        <MacroRow term="dxy" quote={bundle?.dxy} />
+        <MacroRow term="twd" quote={bundle?.twd} />
       </div>
       <div className="mt-4 pt-4 border-t border-ink-700 text-xs flex items-center justify-between">
         <span className="text-zinc-500">風險偏好燈號</span>

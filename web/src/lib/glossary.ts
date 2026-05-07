@@ -133,4 +133,39 @@ export const GLOSSARY: Record<string, Term> = {
     name: '外資持股比（%）',
     definition: '外資持有公司股本比例。台股大型權值股通常 > 50%，反映外資對個股的長期看法。',
   },
+  us10y: {
+    name: 'US 10Y（美國 10 年期公債殖利率）',
+    definition: '美國 10 年期公債到期殖利率，全球無風險利率錨點。殖利率上升通常壓抑高估值科技股，下降則有利成長股回流。',
+    interpret: (v) => {
+      if (v === null) return '尚無資料';
+      if (v > 4.5) return `${fmt(v)}% 偏高，估值壓力大`;
+      if (v < 3) return `${fmt(v)}% 偏低，資金成本鬆`;
+      return `${fmt(v)}% 中性區間`;
+    },
+  },
+  vix: {
+    name: 'VIX（恐慌指數）',
+    definition: 'S&P 500 選擇權隱含波動率，市場恐慌情緒的即時溫度計。<20 偏多，20–30 中性，>30 偏空。',
+    interpret: (v) => {
+      if (v === null) return '尚無資料';
+      if (v < 20) return `${fmt(v)} 風險偏好偏多`;
+      if (v <= 30) return `${fmt(v)} 中性`;
+      return `${fmt(v)} 恐慌情緒升溫`;
+    },
+  },
+  sox: {
+    name: 'SOX（費城半導體指數）',
+    definition: '美國 30 檔半導體龍頭加權指數。台積電 / 聯發科等半導體股與 SOX 高度同步，是判斷產業景氣的領先指標。',
+    interpret: (v) => (v === null ? '尚無資料' : fmt(v, 0)),
+  },
+  dxy: {
+    name: 'DXY（美元指數）',
+    definition: '美元相對 6 種主要貨幣（歐元、日圓等）的加權匯率。DXY 上升代表美元走強，通常壓抑大宗商品與新興市場。',
+    interpret: (v) => (v === null ? '尚無資料' : fmt(v)),
+  },
+  twd: {
+    name: 'USD/TWD（美元兌新台幣）',
+    definition: '1 美元兌換新台幣價格。台幣貶值（數字上升）有利出口為主的科技股；升值則對通膨與內需股相對友善。',
+    interpret: (v) => (v === null ? '尚無資料' : fmt(v)),
+  },
 };
