@@ -14,6 +14,7 @@ export type YahooQuote = {
   pe: number | null;
   forwardPe: number | null;
   ttmEps: number | null;
+  marketTime: number | null;
 };
 
 type Opts = { fetcher?: typeof fetch; userAgent?: string };
@@ -62,6 +63,10 @@ export const fetchYahooQuote = async (
     pe: null,
     forwardPe: null,
     ttmEps: null,
+    marketTime: (() => {
+      const t = num('regularMarketTime');
+      return t === null ? null : t * 1000;
+    })(),
   };
 };
 

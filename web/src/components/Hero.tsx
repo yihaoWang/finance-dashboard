@@ -2,6 +2,22 @@ import type { Quote, Kpi } from '@fd/shared';
 
 type Props = { quote: Quote; kpi: Kpi };
 
+const TZ = 'Asia/Taipei';
+
+const taipeiDateString = (ts: number): string =>
+  new Date(ts).toLocaleDateString('en-CA', { timeZone: TZ });
+
+const isToday = (ts: number): boolean => taipeiDateString(ts) === taipeiDateString(Date.now());
+
+const fmtMarketTime = (ts: number | null): string => {
+  if (ts === null) return '—';
+  const d = new Date(ts);
+  const sameDay = isToday(ts);
+  const date = d.toLocaleDateString('zh-TW', { timeZone: TZ, month: 'numeric', day: 'numeric' });
+  const time = d.toLocaleTimeString('zh-TW', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+  return sameDay ? time : `${date} ${time}`;
+};
+
 const fmtCap = (v: number | null): string => {
   if (v === null) return '—';
   if (v >= 1e12) return `${(v / 1e12).toFixed(2)}T`;
@@ -66,9 +82,14 @@ export const Hero = ({ quote, kpi }: Props) => {
             <div className={`num text-lg ${isUp ? 'text-up' : 'text-down'}`}>
               {isUp ? '+' : ''}{quote.change.toFixed(2)} ({quote.changePct.toFixed(2)}%)
             </div>
+            {quote.marketTime !== null && !isToday(quote.marketTime) && (
+              <span className="text-[11px] text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-0.5">
+                盤前 · 顯示前一交易日
+              </span>
+            )}
           </div>
           <div className="text-xs text-zinc-500 mt-2 num">
-            最後更新 {new Date(quote.updatedAt).toLocaleTimeString('zh-TW')}
+            行情時間 {fmtMarketTime(quote.marketTime)} · 拉取於 {new Date(quote.updatedAt).toLocaleTimeString('zh-TW')}
           </div>
         </div>
         <div className="flex gap-6 text-sm flex-wrap">

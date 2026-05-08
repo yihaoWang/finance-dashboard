@@ -5,6 +5,7 @@ import * as yahoo from '../src/sources/yahoo';
 import * as twse from '../src/sources/twse';
 import * as twseChips from '../src/sources/twse-chips';
 import * as twseMargin from '../src/sources/twse-margin';
+import * as twseMis from '../src/sources/twse-mis';
 import * as finmind from '../src/sources/finmind';
 
 describe('GET /api/stock/:symbol', () => {
@@ -16,6 +17,7 @@ describe('GET /api/stock/:symbol', () => {
     vi.spyOn(twseChips, 'fetchTwseChips').mockResolvedValue(null);
     vi.spyOn(twseMargin, 'fetchTwseMargin').mockResolvedValue(null);
     vi.spyOn(twseMargin, 'fetchTwseForeignHolding').mockResolvedValue(null);
+    vi.spyOn(twseMis, 'fetchTwseMisQuote').mockResolvedValue(null);
     vi.spyOn(finmind, 'fetchQuarterlyFinancials').mockResolvedValue(null);
   });
 

@@ -5,6 +5,7 @@ import { validateSymbol } from '../lib/symbol';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 import { upsertDailyPrices, recentCloses, recentDailyPrices } from '../cache/d1';
 import { fetchYahooQuote, fetchYahooHistory } from '../sources/yahoo';
+import { fetchTwseMisQuote } from '../sources/twse-mis';
 import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
 import { fetchTwseChips } from '../sources/twse-chips';
 import { fetchTwseMargin, fetchTwseForeignHolding } from '../sources/twse-margin';
@@ -46,6 +47,27 @@ stock.get('/:symbol', async (c) => {
   } catch (err) {
     console.warn('yahoo quote failed for symbol', symbol, err);
     return c.json({ error: 'upstream_failed' }, 502);
+  }
+
+  // Live intraday from TWSE MIS overrides Yahoo daily-candle when available.
+  try {
+    const mis = await fetchTwseMisQuote(symbol);
+    if (mis && mis.price !== null && mis.prevClose !== null && mis.prevClose > 0) {
+      const change = mis.price - mis.prevClose;
+      const changePct = (change / mis.prevClose) * 100;
+      quote = {
+        ...quote,
+        name: mis.name || quote.name,
+        price: mis.price,
+        change,
+        changePct,
+        volume: mis.volumeLots * 1000,
+        marketTime: mis.marketTime ?? quote.marketTime,
+      };
+    }
+  } catch (err) {
+    console.warn('twse mis failed for symbol', symbol, err);
+    warnings.push('mis_unavailable');
   }
 
   let closes = await recentCloses(c.env.DB, symbol, 60);
@@ -141,6 +163,7 @@ stock.get('/:symbol', async (c) => {
       high52w: quote.high52w,
       low52w: quote.low52w,
       updatedAt: Date.now(),
+      marketTime: quote.marketTime,
     },
     kpi: {
       macd: macdResult.macd,

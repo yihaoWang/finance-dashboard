@@ -9,6 +9,7 @@ export type Quote = {
   high52w: number | null;
   low52w: number | null;
   updatedAt: number;
+  marketTime: number | null;
 };
 
 export type Kpi = {
