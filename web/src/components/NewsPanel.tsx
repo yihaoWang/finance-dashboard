@@ -37,8 +37,8 @@ export const NewsPanel = ({ symbol }: Props) => {
   const filtered = filter === 'all' ? items : items.filter((i) => i.sentiment === filter);
 
   return (
-    <section className="bg-zinc-900 rounded-xl p-4 mb-6">
-      <h2 className="text-base font-semibold text-zinc-100 mb-3">消息面（近 30 天）</h2>
+    <section className="rounded-2xl bg-ink-900 border border-ink-700 p-5 mb-6">
+      <h2 className="font-medium text-zinc-100 mb-4">消息面（近 30 天）</h2>
 
       <div className="flex gap-2 flex-wrap mb-4">
         {(['all', 'positive', 'negative', 'neutral'] as FilterT[]).map((f) => {
@@ -68,7 +68,7 @@ export const NewsPanel = ({ symbol }: Props) => {
         <p className="text-zinc-500 text-sm">暫無資料</p>
       )}
 
-      <ul className="divide-y divide-zinc-800">
+      <ul className="divide-y divide-zinc-800 overflow-y-auto" style={{ maxHeight: 320 }}>
         {filtered.map((item) => (
           <li key={item.link}>
             <a
