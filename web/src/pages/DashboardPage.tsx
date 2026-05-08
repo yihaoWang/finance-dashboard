@@ -35,11 +35,21 @@ export const DashboardPage = ({ symbol, input, setInput, setSymbol, watchlist, s
     setInput(s);
   };
 
+  const remove = (s: string) => {
+    const next = watchlist.filter((x) => x !== s);
+    setWatchlist(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch (err) {
+      console.warn('failed to persist watchlist', err);
+    }
+  };
+
   return (
     <div>
       <TopNav input={input} onInputChange={setInput} onSubmit={submit} />
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} />
+        <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} onRemove={remove} />
         <DigestCard symbol={symbol} />
         <StockDetail symbol={symbol} />
       </main>
