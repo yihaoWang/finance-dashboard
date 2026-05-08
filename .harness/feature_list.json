@@ -1,0 +1,81 @@
+{
+  "project": "finance_dashboard",
+  "rules": {
+    "single_active_feature": true,
+    "passing_requires_evidence": true,
+    "evidence_must_be_command": true
+  },
+  "_schema_example": {
+    "id": "feature-id",
+    "status": "passing|in-progress|missing",
+    "evidence": {
+      "command": "<shell command to verify>",
+      "expected_exit": 0,
+      "safe": true,
+      "verified_at": "ISO timestamp (only meaningful when safe=false)"
+    }
+  },
+  "_safe_field_note": "safe=true (default): re-runnable any time. safe=false: needs env / mutates state / long-running.",
+  "features": [
+    {
+      "id": "worker-unit-tests",
+      "status": "passing",
+      "priority": 1,
+      "evidence": {
+        "command": "pnpm --filter worker test",
+        "expected_exit": 0,
+        "safe": true
+      }
+    },
+    {
+      "id": "web-typecheck",
+      "status": "passing",
+      "priority": 2,
+      "evidence": {
+        "command": "pnpm --filter web typecheck",
+        "expected_exit": 0,
+        "safe": true
+      }
+    },
+    {
+      "id": "web-build",
+      "status": "passing",
+      "priority": 3,
+      "evidence": {
+        "command": "pnpm --filter web build",
+        "expected_exit": 0,
+        "safe": true
+      }
+    },
+    {
+      "id": "events-api",
+      "status": "in-progress",
+      "priority": 4,
+      "evidence": {
+        "command": "pnpm --filter worker test sources.events",
+        "expected_exit": 0,
+        "safe": true
+      },
+      "notes": "後端管線完成 (route/source/d1/cron)。需套 D1 migration 0003_events.sql 並驗證 /api/events 才算 passing。"
+    },
+    {
+      "id": "events-frontend",
+      "status": "missing",
+      "priority": 5,
+      "evidence": null,
+      "notes": "EventsPanel + useEvents hook 尚未實作"
+    },
+    {
+      "id": "e2e-tests",
+      "status": "passing",
+      "priority": 6,
+      "evidence": {
+        "command": "pnpm --filter web e2e",
+        "expected_exit": 0,
+        "safe": false,
+        "verified_at": "2026-05-08T00:00:00Z"
+      },
+      "notes": "27 Playwright tests against production URL — long-running and external-dependent"
+    }
+  ]
+}

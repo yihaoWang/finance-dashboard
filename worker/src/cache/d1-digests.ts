@@ -4,8 +4,8 @@ export const upsertDigest = async (db: D1Database, bundle: DigestBundle): Promis
   await db
     .prepare(
       `INSERT OR REPLACE INTO digests
-        (date, scope, symbol, hard_data, framework, sentiment, sources_json, model, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (date, scope, symbol, hard_data, framework, sentiment, action_plan, sources_json, model, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       bundle.date,
@@ -14,6 +14,7 @@ export const upsertDigest = async (db: D1Database, bundle: DigestBundle): Promis
       bundle.sections.hard_data,
       bundle.sections.framework,
       bundle.sections.sentiment,
+      bundle.sections.action_plan,
       JSON.stringify(bundle.sources),
       bundle.model,
       bundle.createdAt,
@@ -29,7 +30,7 @@ export const getDigest = async (
 ): Promise<DigestBundle | null> => {
   const row = await db
     .prepare(
-      `SELECT date, scope, symbol, hard_data, framework, sentiment, sources_json, model, created_at
+      `SELECT date, scope, symbol, hard_data, framework, sentiment, action_plan, sources_json, model, created_at
        FROM digests WHERE date = ? AND scope = ? AND symbol = ?`,
     )
     .bind(date, scope, symbol)
@@ -40,6 +41,7 @@ export const getDigest = async (
       hard_data: string;
       framework: string;
       sentiment: string;
+      action_plan: string | null;
       sources_json: string;
       model: string;
       created_at: number;
@@ -55,6 +57,7 @@ export const getDigest = async (
       hard_data: row.hard_data,
       framework: row.framework,
       sentiment: row.sentiment,
+      action_plan: row.action_plan ?? '',
     },
     sources: JSON.parse(row.sources_json) as DigestSource[],
     model: row.model,

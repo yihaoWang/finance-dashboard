@@ -1,0 +1,30 @@
+{
+  "stack": "monorepo",
+  "package_manager": "pnpm",
+  "commands": {
+    "install": "pnpm install",
+    "test": "pnpm --filter worker test",
+    "lint": "pnpm -r typecheck",
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter worker dev",
+    "deploy_worker": "pnpm --filter worker exec wrangler deploy",
+    "deploy_web": "pnpm --filter web build && pnpm --filter web exec wrangler pages deploy dist --project-name=finance-dashboard --branch=main",
+    "deploy": "pnpm --filter worker exec wrangler deploy && pnpm --filter web build && pnpm --filter web exec wrangler pages deploy dist --project-name=finance-dashboard --branch=main"
+  },
+  "ui": {
+    "framework": "react"
+  },
+  "evaluators": {
+    "ui": {
+      "rubric": ".harness/rubrics/ui.md",
+      "inputs": ["diff", "screenshots"]
+    },
+    "code": {
+      "rubric": ".harness/rubrics/code.md",
+      "inputs": ["diff"]
+    }
+  },
+  "_generated_by": "harness-bootstrap",
+  "_generated_at": "2026-05-08T00:00:00Z",
+  "_notes": "monorepo with worker (Cloudflare Workers + Hono) and web (React + Vite). e2e (`pnpm --filter web e2e`) hits production and is excluded from default test command."
+}

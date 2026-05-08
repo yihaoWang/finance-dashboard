@@ -1,0 +1,38 @@
+[
+  {
+    "id": "shi-yin-zhe",
+    "name": "股市隱者",
+    "kind": "youtube",
+    "channelId": "UC5CRUnwa4zduz9A43u-dNsw",
+    "subLang": "zh-Hant",
+    "transcribeMode": "youtube-subs",
+    "extractLang": "zh-Hant"
+  },
+  {
+    "id": "cnbc-closing-bell",
+    "name": "CNBC Closing Bell",
+    "kind": "podcast",
+    "rssUrl": "https://feeds.simplecast.com/Nh1wIaXT",
+    "transcribeMode": "whisper",
+    "whisperModel": "small.en",
+    "extractLang": "en"
+  },
+  {
+    "id": "cnbc-squawk-pod",
+    "name": "CNBC Squawk Pod",
+    "kind": "podcast",
+    "rssUrl": "https://feeds.simplecast.com/VHAcgaw_",
+    "transcribeMode": "whisper",
+    "whisperModel": "small.en",
+    "extractLang": "en"
+  },
+  {
+    "id": "cnbc-squawk-on-the-street",
+    "name": "CNBC Squawk on the Street",
+    "kind": "podcast",
+    "rssUrl": "https://feeds.simplecast.com/GcylmXl7",
+    "transcribeMode": "whisper",
+    "whisperModel": "small.en",
+    "extractLang": "en"
+  }
+]

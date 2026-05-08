@@ -20,7 +20,7 @@ const SAMPLE_BUNDLE: DigestBundle = {
   date: TODAY,
   scope: 'stock',
   symbol: '2330',
-  sections: { hard_data: '硬數據段', framework: '框架解讀段', sentiment: '情緒段' },
+  sections: { hard_data: '硬數據段', framework: '框架解讀段', action_plan: '操作建議段', sentiment: '情緒段' },
   sources: [{ name: 'FRED', url: 'https://fred.stlouisfed.org', timestamp: Date.now() }],
   model: '@cf/meta/llama-3.1-8b-instruct',
   createdAt: Date.now(),
