@@ -113,7 +113,11 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
   const stockQuery = useStock(symbol);
 
   const history = financialsQuery.data?.data.history ?? [];
-  const links = mopsLinks(symbol);
+  const latestRow = history[0];
+  const links = mopsLinks({
+    symbol,
+    ...(latestRow !== undefined ? { year: latestRow.year, quarter: latestRow.quarter } : {}),
+  });
 
   const symbolName = SYMBOL_NAMES[symbol] ?? symbol;
 
@@ -256,7 +260,7 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
             <h2 className="text-base font-semibold text-zinc-100 mb-4">📁 最新財報下載</h2>
             <div className="flex flex-col gap-3">
               <a
-                href={links.latestQuarterReport}
+                href={links.quarterReport}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 rounded-xl text-zinc-300 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
@@ -265,8 +269,8 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   📄
                 </div>
                 <div>
-                  <div>最新季報</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">MOPS t164sb01</div>
+                  <div>{latestRow ? `${latestRow.year} Q${latestRow.quarter} 季報` : '最新季報'}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">合併財報 + 會計師報告（MOPS 預填）</div>
                 </div>
               </a>
               <a
@@ -279,8 +283,8 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   📊
                 </div>
                 <div>
-                  <div>法說會簡報</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">MOPS t100sb02_1</div>
+                  <div>{latestRow ? `${latestRow.year} 年法說會` : '法說會簡報'}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">含簡報、影音、會議紀錄</div>
                 </div>
               </a>
               <a
@@ -293,8 +297,8 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   📂
                 </div>
                 <div>
-                  <div>歷史財報列表</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">MOPS t05st02</div>
+                  <div>公司基本資料 / 重大訊息</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">MOPS 個股總覽</div>
                 </div>
               </a>
               <a
