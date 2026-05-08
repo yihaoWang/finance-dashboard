@@ -49,26 +49,73 @@
     },
     {
       "id": "events-api",
-      "status": "in-progress",
+      "status": "passing",
       "priority": 4,
       "evidence": {
-        "command": "pnpm --filter worker test sources.events",
+        "command": "curl -fsS https://finance-dashboard-worker.nihongo.workers.dev/api/events?days=14 | jq -e '.data.items'",
         "expected_exit": 0,
         "safe": true
       },
-      "notes": "後端管線完成 (route/source/d1/cron)。需套 D1 migration 0003_events.sql 並驗證 /api/events 才算 passing。"
+      "notes": "0003_events.sql applied to remote D1 (2026-05-08). Worker deployed."
     },
     {
       "id": "events-frontend",
       "status": "missing",
       "priority": 5,
       "evidence": null,
-      "notes": "EventsPanel + useEvents hook 尚未實作"
+      "notes": "EventsPanel + useEvents hook 尚未實作。預計顯示在 dashboard overview 區塊（FOMC/CPI/employment/geopolitics 警示卡）。"
+    },
+    {
+      "id": "insights-backend",
+      "status": "passing",
+      "priority": 6,
+      "evidence": {
+        "command": "curl -fsS https://finance-dashboard-worker.nihongo.workers.dev/api/insights?days=3 | jq -e '.data.items'",
+        "expected_exit": 0,
+        "safe": true
+      },
+      "notes": "0004_insights.sql + 0005_digest_action_plan.sql applied (2026-05-08). Worker deployed (4b5b8c4e). Empty until Mac pipeline runs."
+    },
+    {
+      "id": "insights-mac-pipeline",
+      "status": "missing",
+      "priority": 7,
+      "evidence": {
+        "command": "test -f $HOME/Library/LaunchAgents/com.tickr.podcasts.plist && curl -fsS \"$WORKER_URL/api/insights?days=3\" | jq -e '.data.items | length > 0'",
+        "expected_exit": 0,
+        "safe": false
+      },
+      "notes": "scripts/install-podcasts.sh 已寫好，但尚未在任何 Mac 上實際執行。需要：(1) brew install jq/yt-dlp/ffmpeg/whisper-cpp，(2) 下載 ggml-small.en.bin (~466MB)，(3) launchctl bootstrap，(4) 跑一次 run.sh 驗證能 POST 到 /api/insights/ingest 並出現資料。"
+    },
+    {
+      "id": "digest-action-plan-section",
+      "status": "in-progress",
+      "priority": 8,
+      "evidence": {
+        "command": "curl -fsS https://finance-dashboard-worker.nihongo.workers.dev/api/digest | jq -e '.data.sections.action_plan | length > 0'",
+        "expected_exit": 0,
+        "safe": false
+      },
+      "notes": "Prompt + storage + parser 已就緒，但要等下一輪 digest cron (Cloudflare 14:00 UTC 或 Mac 08:00) 跑出第一筆含 action_plan 的 digest 才能驗證。前端目前還沒顯示 action_plan 段落。"
+    },
+    {
+      "id": "digest-action-plan-frontend",
+      "status": "missing",
+      "priority": 9,
+      "evidence": null,
+      "notes": "DigestSection.tsx / DigestCard.tsx 仍只渲染 hard_data + framework + sentiment 三段。需要加 action_plan 區塊（建議用 emphasis card 樣式凸顯操作建議），並在 DigestBundle 型別更新後處理 backward-compat（舊 digest 沒有 action_plan）。"
+    },
+    {
+      "id": "insights-frontend-panel",
+      "status": "missing",
+      "priority": 10,
+      "evidence": null,
+      "notes": "可選：在 dashboard 加「外部觀點」面板顯示最近 3 天 insight 卡片（主敘事 + framework tags + action suggestion）。資料來源 GET /api/insights?days=3。"
     },
     {
       "id": "e2e-tests",
       "status": "passing",
-      "priority": 6,
+      "priority": 11,
       "evidence": {
         "command": "pnpm --filter web e2e",
         "expected_exit": 0,
