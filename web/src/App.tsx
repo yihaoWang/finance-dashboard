@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { DashboardPage } from './pages/DashboardPage';
 import { DigestHistory } from './pages/DigestHistory';
+import { FinancialsPage } from './pages/FinancialsPage';
 
 const STORAGE_KEY = 'fd:watchlist';
 const DEFAULT_WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
@@ -44,6 +45,7 @@ export const App = () => {
         }
       />
       <Route path="/digest" element={<DigestHistory watchlist={watchlist} />} />
+      <Route path="/financials" element={<FinancialsPage watchlist={watchlist} setWatchlist={setWatchlist} />} />
     </Routes>
   );
 };

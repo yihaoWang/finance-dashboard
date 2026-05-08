@@ -1,4 +1,4 @@
-import type { ApiResponse, DigestBundle, DigestHistoryItem, MacroBundle, NewsBundle, PricePoint, StockBundle } from '@fd/shared';
+import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PricePoint, StockBundle } from '@fd/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -35,6 +35,12 @@ export const fetchDigest = async (symbol: string, date?: string): Promise<ApiRes
   const res = await fetch(url);
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<DigestBundle>>;
+};
+
+export const fetchFinancials = async (symbol: string): Promise<ApiResponse<FinancialsBundle>> => {
+  const res = await fetch(`${API_BASE}/api/financials/${encodeURIComponent(symbol)}`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<FinancialsBundle>>;
 };
 
 export const fetchDigestHistory = async (scope: 'market' | 'stock', symbol?: string, limit = 30): Promise<ApiResponse<DigestHistoryItem[]>> => {

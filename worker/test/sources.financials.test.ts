@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { env } from 'cloudflare:test';
-import { fetchQuarterlyFinancials } from '../src/sources/finmind';
+import { fetchQuarterlyFinancials, fetchQuarterlyFinancialsHistory } from '../src/sources/finmind';
 
 type FinancialRecord = { date: string; stock_id: string; type: string; value: number };
 
@@ -87,5 +87,73 @@ describe('fetchQuarterlyFinancials', () => {
 
     // Each call hits both income + balance endpoints → 2 calls first time, 0 second time (cached)
     expect(mockFetcher).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('fetchQuarterlyFinancialsHistory', () => {
+  const makeMultiIncomeResponse = (dates: string[], code: string): string => {
+    const records: FinancialRecord[] = dates.flatMap((date) => makeIncomeRecords(date, code));
+    return JSON.stringify({ msg: 'success', status: 200, data: records });
+  };
+
+  it('returns history array with correct length and ordering (newest first)', async () => {
+    const dates = ['2023-03-31', '2023-06-30', '2023-09-30', '2023-12-31', '2024-03-31', '2024-06-30'];
+    const mockFetcher = vi.fn().mockImplementation((url: string) => {
+      const isBalance = url.includes('TaiwanStockBalanceSheet');
+      const body = isBalance
+        ? makeBalanceResponse(makeBalanceRecords('2024-06-30', '2330'))
+        : makeMultiIncomeResponse(dates, '2330');
+      return Promise.resolve(new Response(body, { status: 200 }));
+    });
+
+    const result = await fetchQuarterlyFinancialsHistory(env.KV, '2330', 8, { fetcher: mockFetcher });
+
+    expect(result.symbol).toBe('2330');
+    expect(Array.isArray(result.history)).toBe(true);
+    // Should have 6 quarters (all 6 dates)
+    expect(result.history.length).toBe(6);
+    // newest first: 2024-06-30 → Q2 2024
+    expect(result.history[0]?.year).toBe(2024);
+    expect(result.history[0]?.quarter).toBe(2);
+    // last should be 2023-03-31 → Q1 2023
+    expect(result.history[result.history.length - 1]?.year).toBe(2023);
+    expect(result.history[result.history.length - 1]?.quarter).toBe(1);
+  });
+
+  it('respects the limit parameter', async () => {
+    const dates = ['2023-03-31', '2023-06-30', '2023-09-30', '2023-12-31', '2024-03-31', '2024-06-30'];
+    const mockFetcher = vi.fn().mockImplementation((url: string) => {
+      const isBalance = url.includes('TaiwanStockBalanceSheet');
+      const body = isBalance
+        ? makeBalanceResponse(makeBalanceRecords('2024-06-30', '2330'))
+        : makeMultiIncomeResponse(dates, '2330');
+      return Promise.resolve(new Response(body, { status: 200 }));
+    });
+
+    const result = await fetchQuarterlyFinancialsHistory(env.KV, '2330', 3, { fetcher: mockFetcher });
+    expect(result.history.length).toBe(3);
+    expect(result.history[0]?.quarter).toBe(2); // most recent
+  });
+
+  it('returns empty history when upstream fails', async () => {
+    const mockFetcher = vi.fn().mockRejectedValue(new Error('network_fail'));
+    const result = await fetchQuarterlyFinancialsHistory(env.KV, '9999', 8, { fetcher: mockFetcher });
+    expect(result.symbol).toBe('9999');
+    expect(result.history).toHaveLength(0);
+  });
+
+  it('serves cached history on second call', async () => {
+    const dates = ['2024-03-31', '2024-06-30'];
+    const mockFetcher = vi.fn().mockImplementation((url: string) => {
+      const isBalance = url.includes('TaiwanStockBalanceSheet');
+      const body = isBalance
+        ? makeBalanceResponse(makeBalanceRecords('2024-06-30', '3008'))
+        : makeMultiIncomeResponse(dates, '3008');
+      return Promise.resolve(new Response(body, { status: 200 }));
+    });
+
+    await fetchQuarterlyFinancialsHistory(env.KV, '3008', 8, { fetcher: mockFetcher });
+    await fetchQuarterlyFinancialsHistory(env.KV, '3008', 8, { fetcher: mockFetcher });
+    expect(mockFetcher).toHaveBeenCalledTimes(2); // 2 calls on first fetch (income+balance), 0 on second (cached)
   });
 });

@@ -246,4 +246,12 @@ test.describe('Dashboard E2E', () => {
     await page.getByRole('button', { name: 'AI 解讀' }).click();
     await expect(page).toHaveURL(/\/digest/);
   });
+
+  test('clicking 財報分析 tab navigates to /financials', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '台積電' })).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: '財報分析' }).click();
+    await expect(page).toHaveURL(/\/financials/);
+    await expect(page.getByText('近 8 季財務數據')).toBeVisible({ timeout: 10_000 });
+  });
 });

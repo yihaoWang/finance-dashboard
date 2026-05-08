@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 type Props = {
+  currentSymbol?: string;
   input: string;
   onInputChange: (v: string) => void;
   onSubmit: () => void;
@@ -24,15 +25,16 @@ const scrollToSection = (id: string) => {
   window.scrollTo({ top, behavior: 'smooth' });
 };
 
-export const TopNav = ({ input, onInputChange, onSubmit }: Props) => {
+export const TopNav = ({ currentSymbol, input, onInputChange, onSubmit }: Props) => {
   const [activeSection, setActiveSection] = useState('overview');
   const navigate = useNavigate();
   const location = useLocation();
 
   const isDigestPage = location.pathname.startsWith('/digest');
+  const isFinancialsPage = location.pathname.startsWith('/financials');
 
   useEffect(() => {
-    if (isDigestPage) return;
+    if (isDigestPage || isFinancialsPage) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -50,7 +52,7 @@ export const TopNav = ({ input, onInputChange, onSubmit }: Props) => {
   }, [isDigestPage]);
 
   const handleScrollTab = (id: string) => {
-    if (isDigestPage) {
+    if (isDigestPage || isFinancialsPage) {
       navigate(`/#${id}`);
     } else {
       scrollToSection(id);
@@ -119,6 +121,17 @@ export const TopNav = ({ input, onInputChange, onSubmit }: Props) => {
             }`}
           >
             AI 解讀
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/financials?symbol=${encodeURIComponent(currentSymbol ?? '2330')}`)}
+            className={`px-3 py-1.5 rounded-md transition-colors ${
+              isFinancialsPage
+                ? 'text-zinc-100 bg-ink-800'
+                : 'hover:bg-ink-800 hover:text-zinc-200'
+            }`}
+          >
+            財報分析
           </button>
         </nav>
         <button

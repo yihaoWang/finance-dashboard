@@ -47,7 +47,7 @@ export const DashboardPage = ({ symbol, input, setInput, setSymbol, watchlist, s
 
   return (
     <div>
-      <TopNav input={input} onInputChange={setInput} onSubmit={submit} />
+      <TopNav input={input} onInputChange={setInput} onSubmit={submit} currentSymbol={symbol} />
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} onRemove={remove} />
         <DigestCard symbol={symbol} />

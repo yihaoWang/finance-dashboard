@@ -88,3 +88,20 @@ export type DigestBundle = {
   createdAt: number;
 };
 export type DigestHistoryItem = { date: string; scope: DigestScope; symbol: string; createdAt: number };
+
+export type QuarterRow = {
+  year: number;
+  quarter: number;
+  eps: number | null;
+  grossMargin: number | null;
+  opMargin: number | null;
+  netMargin: number | null;
+  roe: number | null;
+  revenue: number | null;
+};
+
+export type FinancialsBundle = {
+  symbol: string;
+  history: QuarterRow[];
+  fetchedAt: number;
+};

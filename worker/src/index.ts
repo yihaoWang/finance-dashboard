@@ -6,6 +6,7 @@ import { macro } from './routes/macro';
 import { stock } from './routes/stock';
 import { news } from './routes/news';
 import { digest } from './routes/digest';
+import { financials } from './routes/financials';
 import { scheduled } from './cron';
 
 export type Env = {
@@ -38,6 +39,7 @@ app.route('/api/macro', macro);
 app.route('/api/stock', stock);
 app.route('/api/news', news);
 app.route('/api/digest', digest);
+app.route('/api/financials', financials);
 
 export { app };
 export default { fetch: app.fetch.bind(app), scheduled };
