@@ -38,28 +38,49 @@ const fmt = (v: number | null, decimals = 1): string =>
 
 const fmtRevenue = (v: number | null): string => {
   if (v === null) return '—';
-  const billions = v / 1_000_000_000;
-  return `${billions.toFixed(0)}億`;
-};
-
-const deltaClass = (current: number | null, prev: number | null): string => {
-  if (current === null || prev === null) return '';
-  return current >= prev ? 'text-red-400' : 'text-emerald-400';
-};
-
-const deltaStr = (current: number | null, prev: number | null): string => {
-  if (current === null || prev === null) return '';
-  const d = current - prev;
-  return `${d >= 0 ? '+' : ''}${d.toFixed(1)}`;
+  const yi = v / 100_000_000; // NTD → 億
+  if (yi >= 10_000) return `${(yi / 10_000).toFixed(2)}兆`;
+  return `${yi.toFixed(0)}億`;
 };
 
 type MetricKey = keyof Omit<QuarterRow, 'year' | 'quarter'>;
 
+type DeltaKind = 'pp' | 'pct' | 'abs2' | 'abs1';
+
+const DELTA_KIND: Record<MetricKey, DeltaKind> = {
+  revenue: 'pct',
+  grossMargin: 'pp',
+  opMargin: 'pp',
+  netMargin: 'pp',
+  roe: 'pp',
+  eps: 'abs2',
+};
+
+const computeDelta = (
+  key: MetricKey,
+  current: number | null,
+  prev: number | null,
+): { text: string; up: boolean } | null => {
+  if (current === null || prev === null) return null;
+  const up = current >= prev;
+  const sign = up ? '+' : '';
+  const kind = DELTA_KIND[key];
+  if (kind === 'pct') {
+    if (prev === 0) return null;
+    const pct = ((current - prev) / prev) * 100;
+    return { text: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, up };
+  }
+  const diff = current - prev;
+  if (kind === 'pp') return { text: `${sign}${diff.toFixed(1)}pp`, up };
+  if (kind === 'abs2') return { text: `${sign}${diff.toFixed(2)}`, up };
+  return { text: `${sign}${diff.toFixed(1)}`, up };
+};
+
 const METRICS: { key: MetricKey; label: string; unit: string; formatFn?: (v: number | null) => string }[] = [
   { key: 'revenue', label: '營收', unit: '', formatFn: fmtRevenue },
   { key: 'grossMargin', label: '毛利率', unit: '%' },
-  { key: 'opMargin', label: '營業利益率', unit: '%' },
-  { key: 'netMargin', label: 'EBT淨利率', unit: '%' },
+  { key: 'opMargin', label: '營益率', unit: '%' },
+  { key: 'netMargin', label: '淨利率', unit: '%' },
   { key: 'roe', label: 'ROE (年化)', unit: '%' },
   { key: 'eps', label: 'EPS', unit: '元', formatFn: (v) => fmt(v, 2) },
 ];
@@ -178,13 +199,19 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
               <p className="text-sm text-zinc-500">尚無財報資料</p>
             )}
             {history.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm border-collapse">
+              <div className="overflow-x-auto -mx-5 px-5">
+                <table className="text-sm border-collapse" style={{ minWidth: `${160 + history.length * 110}px` }}>
                   <thead>
                     <tr>
-                      <th className="text-left px-2 py-2 text-zinc-400 font-medium bg-ink-800 rounded-tl-lg">指標</th>
+                      <th className="sticky left-0 z-10 text-left px-3 py-2 text-zinc-400 font-medium bg-ink-800 rounded-tl-lg whitespace-nowrap" style={{ minWidth: 110 }}>
+                        指標
+                      </th>
                       {history.map((row) => (
-                        <th key={`${row.year}-${row.quarter}`} className="text-right px-2 py-2 text-zinc-300 font-medium bg-ink-800 last:rounded-tr-lg">
+                        <th
+                          key={`${row.year}-${row.quarter}`}
+                          className="text-right px-3 py-2 text-zinc-300 font-medium bg-ink-800 last:rounded-tr-lg whitespace-nowrap"
+                          style={{ minWidth: 100 }}
+                        >
                           {row.year} Q{row.quarter}
                         </th>
                       ))}
@@ -193,19 +220,25 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   <tbody>
                     {METRICS.map(({ key, label, unit, formatFn }) => (
                       <tr key={key} className="border-b border-ink-800 hover:bg-accent/5">
-                        <td className="px-2 py-2 text-zinc-400">{label}</td>
+                        <td className="sticky left-0 z-10 bg-ink-900 px-3 py-2 text-zinc-400 whitespace-nowrap">
+                          {label}
+                        </td>
                         {history.map((row, i) => {
                           const val = row[key] as number | null;
                           const prevRow = history[i + 1];
                           const prev = prevRow !== undefined ? prevRow[key] as number | null : null;
                           const formatted = formatFn !== undefined ? formatFn(val) : `${fmt(val)}${val !== null ? unit : ''}`;
+                          const delta = computeDelta(key, val, prev);
                           return (
-                            <td key={`${row.year}-${row.quarter}`} className="px-2 py-2 text-right text-zinc-200 num">
-                              {formatted}
-                              {val !== null && prev !== null && (
-                                <span className={`ml-1 text-xs ${deltaClass(val, prev)}`}>
-                                  {deltaStr(val, prev)}
-                                </span>
+                            <td
+                              key={`${row.year}-${row.quarter}`}
+                              className="px-3 py-2 text-right text-zinc-200 num whitespace-nowrap"
+                            >
+                              <div>{formatted}</div>
+                              {delta !== null && (
+                                <div className={`text-[10px] ${delta.up ? 'text-red-400' : 'text-emerald-400'}`}>
+                                  {delta.text}
+                                </div>
                               )}
                             </td>
                           );

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>財報分析面板 mockup — A vs B</title>
+<style>
+  :root {
+    --ink-950: #0a0a0b; --ink-900: #111113; --ink-800: #1a1a1d;
+    --ink-700: #26262a; --ink-600: #3a3a40;
+    --accent: #7c5cff; --accent-soft: #a78bfa;
+    --up: #ef4444; --down: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ink-950); color: #e4e4e7;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Inter", "PingFang TC", sans-serif;
+    letter-spacing: -0.01em;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  .toggle {
+    display: flex; gap: 4px; padding: 4px; background: var(--ink-900);
+    border: 1px solid var(--ink-700); border-radius: 12px;
+    width: fit-content; margin: 0 auto 32px;
+  }
+  .toggle button {
+    background: transparent; border: 0; color: #71717a;
+    padding: 8px 18px; border-radius: 8px; font: inherit; cursor: pointer;
+  }
+  .toggle button.active { background: var(--ink-700); color: #f4f4f5; }
+  .panel {
+    background: var(--ink-900); border: 1px solid var(--ink-700);
+    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  }
+  .panel h2 { font-size: 16px; color: #f4f4f5; margin-bottom: 16px; font-weight: 600; }
+  .panel h3 { font-size: 13px; color: #d4d4d8; margin: 14px 0 10px; font-weight: 600; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* --- nav --- */
+  nav.top {
+    position: sticky; top: 0; backdrop-filter: blur(8px);
+    background: rgba(10,10,11,0.8); border-bottom: 1px solid var(--ink-700);
+    padding: 12px 24px; display: flex; gap: 16px; align-items: center;
+    margin: -24px -24px 24px;
+  }
+  nav.top .logo { width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft)); }
+  nav.top .brand { font-weight: 600; color: #f4f4f5; }
+  nav.top .search {
+    flex: 1; max-width: 360px; background: var(--ink-900);
+    border: 1px solid var(--ink-700); border-radius: 8px;
+    padding: 8px 12px; color: #d4d4d8;
+  }
+  nav.top .tabs { display: flex; gap: 4px; }
+  nav.top .tabs button {
+    background: transparent; border: 0; color: #71717a;
+    padding: 6px 12px; border-radius: 6px; font: inherit; cursor: pointer;
+  }
+  nav.top .tabs button.active { background: var(--ink-800); color: #f4f4f5; }
+  nav.top .tabs button:hover { background: var(--ink-800); color: #d4d4d8; }
+  nav.top .submit {
+    margin-left: auto; background: var(--accent); border: 0; color: white;
+    padding: 6px 14px; border-radius: 6px; font: inherit; cursor: pointer;
+  }
+
+  /* --- watch strip --- */
+  .watch { display: flex; gap: 8px; margin-bottom: 20px; align-items: center; }
+  .watch .label { font-size: 12px; color: #71717a; margin-right: 4px; }
+  .watch .chip {
+    background: var(--ink-800); border: 1px solid var(--ink-700);
+    border-radius: 8px; padding: 6px 12px; font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .watch .chip.active { background: rgba(124,92,255,0.12); border-color: rgba(124,92,255,0.4); color: #f4f4f5; }
+  .watch .chip .x { color: #71717a; padding: 0 4px; cursor: pointer; }
+  .watch .chip .x:hover { color: #ef4444; }
+  .watch .chip .name { font-size: 12px; color: #71717a; }
+
+  /* --- placeholder hero --- */
+  .hero-mini {
+    background: var(--ink-900); border: 1px solid var(--ink-700);
+    border-radius: 16px; padding: 16px 20px; margin-bottom: 16px;
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  .hero-mini h1 { font-size: 18px; font-weight: 600; color: #f4f4f5; }
+  .hero-mini .price { font-size: 28px; font-weight: 600; color: #f4f4f5; }
+  .hero-mini .change.down { color: var(--down); font-size: 14px; }
+  .hero-mini .meta { font-size: 11px; color: #71717a; margin-left: auto; }
+
+  /* --- TABLE --- */
+  table.qtbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.qtbl th, table.qtbl td {
+    padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--ink-800);
+  }
+  table.qtbl th:first-child, table.qtbl td:first-child {
+    text-align: left; color: #a1a1aa;
+  }
+  table.qtbl thead th { color: #d4d4d8; font-weight: 500; background: var(--ink-800); }
+  table.qtbl tbody tr:hover { background: rgba(124,92,255,0.04); }
+  .delta-up { color: var(--up); font-size: 11px; }
+  .delta-dn { color: var(--down); font-size: 11px; }
+
+  /* --- AI digest section --- */
+  .ai-block {
+    background: linear-gradient(180deg, rgba(124,92,255,0.06), transparent);
+    border: 1px solid rgba(124,92,255,0.25); border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .ai-block .badge {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    background: rgba(124,92,255,0.15); border: 1px solid rgba(124,92,255,0.3);
+    border-radius: 999px; color: var(--accent-soft); margin-right: 8px;
+    font-weight: 500;
+  }
+  .ai-block .text { color: #d4d4d8; line-height: 1.7; margin-top: 8px; font-size: 13px; }
+
+  /* --- download buttons --- */
+  .download-list { display: flex; flex-direction: column; gap: 8px; }
+  .download-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: var(--ink-800);
+    border: 1px solid var(--ink-700); border-radius: 10px;
+    text-decoration: none; color: #d4d4d8; font-size: 13px;
+    transition: all 0.15s;
+  }
+  .download-btn:hover { border-color: rgba(124,92,255,0.5); color: var(--accent-soft); }
+  .download-btn .icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--ink-700); display: grid; place-items: center;
+    color: #a1a1aa; flex-shrink: 0;
+  }
+  .download-btn .meta { font-size: 11px; color: #71717a; margin-top: 2px; }
+
+  /* --- news list (market view) --- */
+  .news-list { display: flex; flex-direction: column; }
+  .news-row {
+    display: flex; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--ink-800);
+  }
+  .news-row:last-child { border-bottom: 0; }
+  .dot { width: 6px; height: 6px; border-radius: 999px; margin-top: 7px; flex-shrink: 0; }
+  .dot.pos { background: var(--up); }
+  .dot.neg { background: var(--down); }
+  .dot.neu { background: #f59e0b; }
+  .news-row .title { font-size: 13px; color: #d4d4d8; line-height: 1.5; }
+  .news-row .meta { font-size: 11px; color: #71717a; margin-top: 3px; }
+
+  /* --- option B specific: full page --- */
+  .b-tab-active { background: var(--accent) !important; color: white !important; }
+  .b-page { display: none; }
+  .b-page.show { display: block; }
+
+  /* --- option A specific --- */
+  .a-page { display: none; }
+  .a-page.show { display: block; }
+
+  .label-pill {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    background: var(--ink-800); border: 1px solid var(--ink-700);
+    border-radius: 999px; color: #a1a1aa; margin-right: 6px;
+  }
+
+  /* compact panel for option A */
+  .compact-3col { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .compact-3col { grid-template-columns: 1fr; } }
+
+  /* full grid for option B */
+  .b-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .b-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="toggle">
+    <button id="toggleA" class="active" onclick="showOption('A')">A · 整合在 dashboard 下方</button>
+    <button id="toggleB" onclick="showOption('B')">B · 獨立 /financials 分頁</button>
+  </div>
+
+  <!-- ============================= -->
+  <!-- OPTION A: AnalysisPanels 下方  -->
+  <!-- ============================= -->
+  <div id="optA" class="a-page show">
+
+    <nav class="top">
+      <div class="logo"></div>
+      <span class="brand">Tickr</span>
+      <input class="search" value="2330 台積電">
+      <div class="tabs">
+        <button>總覽</button>
+        <button class="active">基本面</button>
+        <button>技術面</button>
+        <button>籌碼</button>
+        <button>宏觀</button>
+        <button>AI 解讀</button>
+      </div>
+      <button class="submit">查詢</button>
+    </nav>
+
+    <div class="watch">
+      <span class="label">自選</span>
+      <div class="chip active"><span class="num">2330</span> <span class="name">台積電</span><span class="x">×</span></div>
+      <div class="chip"><span class="num">2454</span> <span class="name">聯發科</span><span class="x">×</span></div>
+      <div class="chip"><span class="num">2317</span> <span class="name">鴻海</span><span class="x">×</span></div>
+    </div>
+
+    <div class="hero-mini">
+      <h1>台積電</h1>
+      <span class="num" style="color:#71717a;font-size:12px">2330</span>
+      <span class="price num">2302.50</span>
+      <span class="change down num">−7.50 (−0.32%)</span>
+      <span class="meta num">行情時間 10:17 · 拉取於 10:18</span>
+    </div>
+
+    <div style="font-size:12px;color:#71717a;margin-bottom:8px;text-align:center">
+      ↑ 上方為現有 dashboard / KPI / 圖表 / 三欄分析（略）
+    </div>
+
+    <!-- THE NEW PANEL -->
+    <div class="panel">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <h2 style="margin:0">財報分析</h2>
+        <span class="label-pill">FY2025 Q4</span>
+        <span class="label-pill" style="border-color:rgba(124,92,255,0.3);color:var(--accent-soft);background:rgba(124,92,255,0.1)">2026/3/15 公告</span>
+      </div>
+
+      <div class="compact-3col">
+        <!-- Section 1: Download + Quarterly Table -->
+        <div>
+          <h3>📄 最新財報下載</h3>
+          <div class="download-list">
+            <a class="download-btn" href="#">
+              <div class="icon">📊</div>
+              <div>
+                <div>2025 Q4 合併財報</div>
+                <div class="meta">MOPS 公告 · 2026/3/15</div>
+              </div>
+            </a>
+            <a class="download-btn" href="#">
+              <div class="icon">🎤</div>
+              <div>
+                <div>2025 Q4 法說會簡報</div>
+                <div class="meta">MOPS 公告</div>
+              </div>
+            </a>
+            <a class="download-btn" href="#">
+              <div class="icon">📁</div>
+              <div>
+                <div>所有財報 / 重大訊息</div>
+                <div class="meta">MOPS 個股頁面</div>
+              </div>
+            </a>
+          </div>
+
+          <h3 style="margin-top:18px">近 4 季數據</h3>
+          <table class="qtbl">
+            <thead>
+              <tr><th></th><th>25Q4</th><th>25Q3</th><th>25Q2</th><th>25Q1</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>EPS</td>
+                <td class="num">13.95<div class="delta-up">+11%</div></td>
+                <td class="num">12.54</td>
+                <td class="num">11.41</td>
+                <td class="num">9.10</td>
+              </tr>
+              <tr>
+                <td>毛利率</td>
+                <td class="num">62.3%<div class="delta-up">+1.4pp</div></td>
+                <td class="num">60.9%</td>
+                <td class="num">58.6%</td>
+                <td class="num">53.1%</td>
+              </tr>
+              <tr>
+                <td>營益率</td>
+                <td class="num">54.0%<div class="delta-up">+1.2pp</div></td>
+                <td class="num">52.8%</td>
+                <td class="num">49.7%</td>
+                <td class="num">42.2%</td>
+              </tr>
+              <tr>
+                <td>淨利率</td>
+                <td class="num">48.3%<div class="delta-up">+0.5pp</div></td>
+                <td class="num">47.8%</td>
+                <td class="num">42.7%</td>
+                <td class="num">37.9%</td>
+              </tr>
+              <tr>
+                <td>ROE</td>
+                <td class="num">37.3%<div class="delta-up">+0.7pp</div></td>
+                <td class="num">36.6%</td>
+                <td class="num">31.3%</td>
+                <td class="num">26.8%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section 2: AI Analysis -->
+        <div>
+          <h3>🤖 AI 財報分析</h3>
+          <div class="ai-block">
+            <span class="badge">框架解讀 · Claude Sonnet</span>
+            <span class="num" style="font-size:10px;color:#71717a">2026-05-08 08:00</span>
+            <div class="text">
+              台積電 25Q4 EPS 13.95 元，QoQ +11%，毛利率回到 62.3%（+1.4pp）反映 N3 / N5 製程持續放量與成本下降。
+              ROE 37.3% 處於歷史高檔，獲利能力穩固。<br><br>
+              亮點：營益率連 4 季擴張（42→50→53→54%），管理效率仍在改善。風險：CapEx 仍維持高檔（USD 380~400 億 guidance），自由現金流壓力需觀察。
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Market View -->
+        <div>
+          <h3>📰 市場觀點</h3>
+          <div class="ai-block">
+            <span class="badge">情緒摘要 · Digest</span>
+            <div class="text">
+              市場短期氛圍偏多。外資連 4 日買超累計 +12,000 張，新聞利多 8 / 利空 2 / 中性 5。但 RSI 已抵 68，月線乖離 +8.8%，短線過熱風險提升。
+            </div>
+          </div>
+
+          <h3 style="margin-top:14px">近期新聞</h3>
+          <div class="news-list">
+            <div class="news-row">
+              <div class="dot pos"></div>
+              <div>
+                <div class="title">外資加碼台股464億元連4買 青睞ETF敲進台積電鴻海</div>
+                <div class="meta">Yahoo奇摩 · 2 小時前</div>
+              </div>
+            </div>
+            <div class="news-row">
+              <div class="dot neu"></div>
+              <div>
+                <div class="title">台積電「一個人的武林」藏隱憂！ETF上限是否重縮</div>
+                <div class="meta">Yahoo奇摩 · 5 小時前</div>
+              </div>
+            </div>
+            <div class="news-row">
+              <div class="dot pos"></div>
+              <div>
+                <div class="title">【公告】台積電代子公司 TSMC Global Ltd. 取得固定收益證券</div>
+                <div class="meta">公司公告 · 1 天前</div>
+              </div>
+            </div>
+            <div class="news-row">
+              <div class="dot neg"></div>
+              <div>
+                <div class="title">中東戰火推升油價！台股震盪</div>
+                <div class="meta">Yahoo奇摩 · 1 天前</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:#71717a;text-align:center;margin-top:24px;padding:16px;background:var(--ink-900);border-radius:12px;border:1px dashed var(--ink-700)">
+      <strong>方案 A 評估：</strong>所有資訊一頁看完，scroll 到底就有財報。但是頁面很長，行動裝置可能 7~8 屏。
+    </div>
+  </div>
+
+
+  <!-- ============================= -->
+  <!-- OPTION B: 獨立 /financials 分頁 -->
+  <!-- ============================= -->
+  <div id="optB" class="b-page">
+
+    <nav class="top">
+      <div class="logo"></div>
+      <span class="brand">Tickr</span>
+      <input class="search" value="2330 台積電">
+      <div class="tabs">
+        <button>總覽</button>
+        <button>基本面</button>
+        <button>技術面</button>
+        <button>籌碼</button>
+        <button>宏觀</button>
+        <button>AI 解讀</button>
+        <button class="b-tab-active">財報分析</button>
+      </div>
+      <button class="submit">查詢</button>
+    </nav>
+
+    <div class="watch">
+      <span class="label">自選</span>
+      <div class="chip active"><span class="num">2330</span> <span class="name">台積電</span><span class="x">×</span></div>
+      <div class="chip"><span class="num">2454</span> <span class="name">聯發科</span><span class="x">×</span></div>
+    </div>
+
+    <div class="hero-mini">
+      <h1>台積電 · 財報分析</h1>
+      <span class="num" style="color:#71717a;font-size:12px">2330</span>
+      <span class="meta">FY2025 Q4 · 公告於 2026/3/15</span>
+    </div>
+
+    <!-- Top: download + table -->
+    <div class="b-grid">
+      <div class="panel">
+        <h2>📊 近 8 季財務數據</h2>
+        <table class="qtbl">
+          <thead>
+            <tr>
+              <th></th>
+              <th>25Q4</th><th>25Q3</th><th>25Q2</th><th>25Q1</th>
+              <th>24Q4</th><th>24Q3</th><th>24Q2</th><th>24Q1</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>EPS</td>
+              <td class="num">13.95<div class="delta-up">+11%</div></td>
+              <td class="num">12.54</td><td class="num">11.41</td><td class="num">9.10</td>
+              <td class="num">11.41</td><td class="num">10.45</td><td class="num">9.56</td><td class="num">8.70</td>
+            </tr>
+            <tr>
+              <td>毛利率</td>
+              <td class="num">62.3%<div class="delta-up">+1.4pp</div></td>
+              <td class="num">60.9%</td><td class="num">58.6%</td><td class="num">53.1%</td>
+              <td class="num">59.0%</td><td class="num">57.8%</td><td class="num">53.2%</td><td class="num">53.1%</td>
+            </tr>
+            <tr>
+              <td>營益率</td>
+              <td class="num">54.0%</td><td class="num">52.8%</td><td class="num">49.7%</td><td class="num">42.2%</td>
+              <td class="num">49.0%</td><td class="num">47.5%</td><td class="num">42.5%</td><td class="num">42.0%</td>
+            </tr>
+            <tr>
+              <td>淨利率</td>
+              <td class="num">48.3%</td><td class="num">47.8%</td><td class="num">42.7%</td><td class="num">37.9%</td>
+              <td class="num">42.3%</td><td class="num">42.0%</td><td class="num">38.5%</td><td class="num">38.0%</td>
+            </tr>
+            <tr>
+              <td>ROE</td>
+              <td class="num">37.3%</td><td class="num">36.6%</td><td class="num">31.3%</td><td class="num">26.8%</td>
+              <td class="num">28.1%</td><td class="num">27.5%</td><td class="num">26.0%</td><td class="num">25.5%</td>
+            </tr>
+            <tr>
+              <td>營收 (M)</td>
+              <td class="num">868,500</td><td class="num">759,700</td><td class="num">673,500</td><td class="num">592,000</td>
+              <td class="num">625,000</td><td class="num">620,400</td><td class="num">602,000</td><td class="num">592,000</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button class="download-btn" style="padding:6px 12px">表格 → CSV</button>
+          <button class="download-btn" style="padding:6px 12px">表格 → 圖表</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>📁 最新財報下載</h2>
+        <div class="download-list">
+          <a class="download-btn" href="#">
+            <div class="icon">📊</div>
+            <div>
+              <div>2025 Q4 合併財報</div>
+              <div class="meta">MOPS 公告 · 2026/3/15</div>
+            </div>
+          </a>
+          <a class="download-btn" href="#">
+            <div class="icon">🎤</div>
+            <div>
+              <div>2025 Q4 法說會簡報</div>
+              <div class="meta">MOPS 公告</div>
+            </div>
+          </a>
+          <a class="download-btn" href="#">
+            <div class="icon">📁</div>
+            <div>
+              <div>歷史財報列表</div>
+              <div class="meta">MOPS 個股頁面</div>
+            </div>
+          </a>
+          <a class="download-btn" href="#">
+            <div class="icon">🏢</div>
+            <div>
+              <div>公司投資人關係 IR</div>
+              <div class="meta">tsmc.com</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Analysis -->
+    <div class="panel">
+      <h2>🤖 AI 財報分析</h2>
+      <div class="ai-block">
+        <span class="badge">框架解讀 · Claude Sonnet</span>
+        <span class="num" style="font-size:10px;color:#71717a">2026-05-08 08:00 產出</span>
+        <div class="text">
+          <strong>獲利成長：</strong>25Q4 EPS 13.95 元（QoQ +11%、YoY +22%），近 4 季 EPS 累計 47.0 元為歷史新高。<br><br>
+          <strong>毛利率走勢：</strong>毛利率回到 62.3%（QoQ +1.4pp），主因 N3 製程持續放量與舊製程稼動率回升。對照前 8 季，目前處於上行週期最高點。<br><br>
+          <strong>ROE 表現：</strong>ROE 37.3% 創歷史新高，遠高於同業（聯電 18.5%、Intel 5.2%、Samsung Foundry 12%），反映先進製程的議價力與產能利用率優勢。<br><br>
+          <strong>風險點：</strong>CapEx guidance 維持 USD 380~400 億高檔，自由現金流可能受壓；中國市場營收占比下降至 8%（前期 11%），出口管制影響需持續觀察。
+        </div>
+      </div>
+    </div>
+
+    <!-- Market View -->
+    <div class="b-grid">
+      <div class="panel">
+        <h2>📰 近期新聞</h2>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <span class="label-pill">全部 11</span>
+          <span class="label-pill" style="color:var(--up)">利多 6</span>
+          <span class="label-pill" style="color:var(--down)">利空 2</span>
+          <span class="label-pill">中性 3</span>
+        </div>
+        <div class="news-list">
+          <div class="news-row">
+            <div class="dot pos"></div>
+            <div>
+              <div class="title">外資加碼台股464億元連4買 青睞ETF敲進台積電鴻海</div>
+              <div class="meta">Yahoo奇摩 · 2 小時前</div>
+            </div>
+          </div>
+          <div class="news-row">
+            <div class="dot pos"></div>
+            <div>
+              <div class="title">摩根大通調升台積電目標價至 1,250 元，預期 AI HBM 訂單延續到 2027</div>
+              <div class="meta">經濟日報 · 5 小時前</div>
+            </div>
+          </div>
+          <div class="news-row">
+            <div class="dot neu"></div>
+            <div>
+              <div class="title">台積電「一個人的武林」藏隱憂！ETF上限是否重縮</div>
+              <div class="meta">Yahoo奇摩 · 5 小時前</div>
+            </div>
+          </div>
+          <div class="news-row">
+            <div class="dot neg"></div>
+            <div>
+              <div class="title">美方擴大半導體出口管制範圍，影響中國客戶比重待釐清</div>
+              <div class="meta">路透 · 1 天前</div>
+            </div>
+          </div>
+          <div class="news-row">
+            <div class="dot pos"></div>
+            <div>
+              <div class="title">【公告】台積電代子公司 TSMC Global Ltd. 取得固定收益證券</div>
+              <div class="meta">公司公告 · 1 天前</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>📡 市場觀點</h2>
+        <div class="ai-block">
+          <span class="badge">情緒摘要 · Digest</span>
+          <div class="text">
+            短期氛圍偏多。外資連 4 日買超累計 +12,000 張，新聞利多 6 / 利空 2 / 中性 3。
+            但 RSI 已抵 68、月線乖離 +8.8%，短線過熱風險提升。中長期 AI 需求支撐獲利成長，建議分批承接。
+          </div>
+        </div>
+
+        <h3 style="margin-top:14px">籌碼面信號</h3>
+        <div style="font-size:13px;color:#d4d4d8;line-height:1.8">
+          • 外資 5 日連買 +8,420 張<br>
+          • 投信買超 +1,250 張<br>
+          • 自營商賣超 -310 張<br>
+          • 融資餘額 27,684 張（持平）<br>
+          • 外資持股 70.65%（歷史高檔）
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:#71717a;text-align:center;margin-top:24px;padding:16px;background:var(--ink-900);border-radius:12px;border:1px dashed var(--ink-700)">
+      <strong>方案 B 評估：</strong>整頁聚焦財報，可放更多歷史季度（8 季）+ 完整新聞列表。但需從總覽切換進來，多一次點擊。
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function showOption(opt) {
+    document.getElementById('optA').classList.toggle('show', opt === 'A');
+    document.getElementById('optB').classList.toggle('show', opt === 'B');
+    document.getElementById('toggleA').classList.toggle('active', opt === 'A');
+    document.getElementById('toggleB').classList.toggle('active', opt === 'B');
+  }
+</script>
+</body>
+</html>
