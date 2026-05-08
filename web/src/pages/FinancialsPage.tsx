@@ -132,7 +132,6 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
   const negCount = allNews.filter((n) => n.sentiment === 'negative').length;
   const neuCount = allNews.filter((n) => n.sentiment === 'neutral').length;
   const filteredNews = newsFilter === 'all' ? allNews : allNews.filter((n) => n.sentiment === newsFilter);
-  const displayNews = filteredNews.slice(0, 5);
 
   const chips = stockQuery.data?.data.chips;
   const digestData = digestQuery.data?.data;
@@ -368,14 +367,14 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
               ))}
             </div>
             {newsQuery.isLoading && <p className="text-sm text-zinc-500">載入中…</p>}
-            {displayNews.length === 0 && !newsQuery.isLoading && (
+            {filteredNews.length === 0 && !newsQuery.isLoading && (
               <p className="text-sm text-zinc-500">暫無新聞</p>
             )}
-            <div className="flex flex-col">
-              {displayNews.map((item) => (
+            <div className="flex flex-col max-h-[480px] overflow-y-auto pr-1">
+              {filteredNews.map((item) => (
                 <div key={item.link} className="flex gap-2.5 py-2.5 border-b border-ink-800 last:border-0">
                   <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${SENTIMENT_DOT[item.sentiment]}`} />
-                  <div>
+                  <div className="min-w-0">
                     <a
                       href={item.link}
                       target="_blank"
@@ -385,7 +384,7 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                       {item.title}
                     </a>
                     <p className="text-xs text-zinc-500 mt-0.5">
-                      {item.publisher} · {new Date(item.publishedAt * 1000).toLocaleDateString('zh-TW')}
+                      {item.publisher} · {new Date(item.publishedAt).toLocaleDateString('zh-TW')}
                     </p>
                   </div>
                 </div>
