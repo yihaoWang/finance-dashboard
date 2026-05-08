@@ -7,6 +7,8 @@ import { stock } from './routes/stock';
 import { news } from './routes/news';
 import { digest } from './routes/digest';
 import { financials } from './routes/financials';
+import { events } from './routes/events';
+import { insights } from './routes/insights';
 import { scheduled } from './cron';
 
 export type Env = {
@@ -40,6 +42,8 @@ app.route('/api/stock', stock);
 app.route('/api/news', news);
 app.route('/api/digest', digest);
 app.route('/api/financials', financials);
+app.route('/api/events', events);
+app.route('/api/insights', insights);
 
 export { app };
 export default { fetch: app.fetch.bind(app), scheduled };

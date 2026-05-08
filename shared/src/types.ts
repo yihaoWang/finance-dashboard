@@ -76,7 +76,35 @@ export type NewsItem = {
 export type NewsBundle = { items: NewsItem[] };
 
 export type DigestScope = 'market' | 'stock';
-export type DigestSection = { hard_data: string; framework: string; sentiment: string };
+export type DigestSection = {
+  hard_data: string;
+  framework: string;
+  action_plan: string;
+  sentiment: string;
+};
+
+export type InsightSourceKind = 'podcast' | 'youtube';
+
+export type Insight = {
+  id: string;
+  source: string;
+  sourceKind: InsightSourceKind;
+  episodeTitle: string;
+  episodeUrl: string | null;
+  audioUrl: string | null;
+  publishedAt: number;
+  mainThesis: string;
+  validationSignals: string[];
+  reversalSignals: string[];
+  frameworkTags: string[];
+  actionHorizon: string | null;
+  actionSuggestion: string | null;
+  model: string;
+  createdAt: number;
+};
+
+export type InsightsBundle = { items: Insight[]; fetchedAt: number };
+
 export type DigestSource = { name: string; url: string; timestamp: number };
 export type DigestBundle = {
   date: string;
@@ -98,6 +126,28 @@ export type QuarterRow = {
   netMargin: number | null;
   roe: number | null;
   revenue: number | null;
+};
+
+export type EventImpact = 'high' | 'medium' | 'low';
+export type EventCategory = 'fomc' | 'cpi' | 'employment' | 'gdp' | 'central_bank' | 'geopolitics' | 'other';
+
+export type EventItem = {
+  id: string;
+  eventTime: number;
+  category: EventCategory;
+  title: string;
+  country: string;
+  impact: EventImpact;
+  source: string;
+  url: string | null;
+  forecast: string | null;
+  previous: string | null;
+  actual: string | null;
+};
+
+export type EventsBundle = {
+  items: EventItem[];
+  fetchedAt: number;
 };
 
 export type FinancialsBundle = {
