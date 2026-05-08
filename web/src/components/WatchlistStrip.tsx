@@ -43,7 +43,7 @@ export const WatchlistStrip = ({ current, watchlist, onPick, onRemove }: Props) 
             }}
             aria-label={`移除 ${s}`}
             title={`移除 ${s}`}
-            className="px-1.5 mr-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity rounded"
+            className="px-1.5 mr-1 text-zinc-500 hover:text-red-400 transition-colors rounded"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
