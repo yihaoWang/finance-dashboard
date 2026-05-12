@@ -9,6 +9,7 @@ import { digest } from './routes/digest';
 import { financials } from './routes/financials';
 import { events } from './routes/events';
 import { insights } from './routes/insights';
+import { sentiment } from './routes/sentiment';
 import { scheduled } from './cron';
 import { insertDailyValue } from './cache/d1-sentiment';
 import type { IndicatorKey } from '@fd/shared';
@@ -47,6 +48,7 @@ app.route('/api/digest', digest);
 app.route('/api/financials', financials);
 app.route('/api/events', events);
 app.route('/api/insights', insights);
+app.route('/api/sentiment', sentiment);
 
 app.post('/api/admin/sentiment-backfill', async (c) => {
   const auth = c.req.header('authorization');
