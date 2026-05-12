@@ -3,6 +3,7 @@ import { Hero } from '../components/Hero';
 import { KpiGrid } from '../components/KpiGrid';
 import { PriceChart } from '../components/PriceChart';
 import { MacroPanel } from '../components/MacroPanel';
+import { SentimentPanel } from '../components/SentimentPanel';
 import { AnalysisPanels } from '../components/AnalysisPanels';
 import { NewsPanel } from '../components/NewsPanel';
 
@@ -29,6 +30,9 @@ export const StockDetail = ({ symbol }: Props) => {
           <MacroPanel />
         </div>
       </section>
+      <div className="mb-6">
+        <SentimentPanel />
+      </div>
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
       <NewsPanel symbol={symbol} />
       {data.warnings && (
