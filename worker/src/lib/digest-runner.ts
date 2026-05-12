@@ -1,13 +1,14 @@
 import type { Env } from '../index';
-import type { DigestBundle, DigestScope, DigestSource, Insight } from '@fd/shared';
+import type { DigestBundle, DigestScope, DigestSource, Insight, SentimentBundle } from '@fd/shared';
 import { fetchFredSnapshot } from '../sources/fred';
 import { fetchTwseBwibbu } from '../sources/twse';
 import { fetchTwseChips } from '../sources/twse-chips';
 import { fetchYahooNews } from '../sources/yahoo-news';
 import { fetchYahooQuote } from '../sources/yahoo';
-import { SYSTEM_PROMPT, buildPrompt, parseSections } from './digest-prompt';
+import { SYSTEM_PROMPT, buildPrompt, formatSentimentForPrompt, parseSections } from './digest-prompt';
 import { upsertDigest } from '../cache/d1-digests';
 import { listRecentInsights } from '../cache/d1-insights';
+import { kvGetJson } from '../cache/kv';
 
 export type RunArgs = { scope: DigestScope; symbol: string };
 
@@ -38,7 +39,7 @@ export const gatherDigestPayload = async (
   const newsSymbol = scope === 'stock' ? symbol : (MARKET_NEWS_SYMBOLS[0] ?? '2330');
   const insightsSinceTs = now - 3 * 86_400_000;
 
-  const [fredResult, twseMarketResult, chipsResult, newsResult, quoteResult, insightsResult] =
+  const [fredResult, twseMarketResult, chipsResult, newsResult, quoteResult, insightsResult, sentimentResult] =
     await Promise.allSettled([
       fetchFredSnapshot(env),
       fetchTwseBwibbu(env.KV, scope === 'market' ? 'Y9999' : symbol),
@@ -46,6 +47,7 @@ export const gatherDigestPayload = async (
       fetchYahooNews(newsSymbol),
       scope === 'stock' ? fetchYahooQuote(symbol) : Promise.resolve(null),
       listRecentInsights(env.DB, insightsSinceTs, 8),
+      kvGetJson<{ value: SentimentBundle; ts: number }>(env.KV, 'sentiment:bundle'),
     ]);
 
   const fred = fredResult.status === 'fulfilled' ? fredResult.value : null;
@@ -54,6 +56,8 @@ export const gatherDigestPayload = async (
   const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
   const quote = quoteResult.status === 'fulfilled' ? quoteResult.value : null;
   const insights: Insight[] = insightsResult.status === 'fulfilled' ? insightsResult.value : [];
+  const sentimentCached = sentimentResult.status === 'fulfilled' ? sentimentResult.value : null;
+  const sentimentBlock = sentimentCached ? formatSentimentForPrompt(sentimentCached.value) : '';
 
   // Collect sources
   sources.push({
@@ -98,7 +102,7 @@ export const gatherDigestPayload = async (
     });
   }
 
-  const user = buildPrompt({ scope, symbol, date, fred, twseMarket, chips, news: news ?? [], quote, insights });
+  const user = buildPrompt({ scope, symbol, date, fred, twseMarket, chips, news: news ?? [], quote, insights, sentimentBlock });
 
   return { system: SYSTEM_PROMPT, user, sources, scope, symbol, date };
 };
