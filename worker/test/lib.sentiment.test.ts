@@ -58,9 +58,10 @@ describe('computePercentile', () => {
 
 describe('findNearestLandmark', () => {
   it('returns the landmark closest in value', () => {
-    const result = findNearestLandmark(HISTORICAL_LANDMARKS.margin_maintenance, 140);
-    expect(result?.event).toBe('2022 升息熊市底');
-    expect(result?.distance).toBe(2);
+    // margin_maintenance landmarks now use a ~97.5–101.8 scale (ratio ×100)
+    const result = findNearestLandmark(HISTORICAL_LANDMARKS.margin_maintenance, 100);
+    expect(result?.event).toBe('2023 反彈（融資回溫）');
+    expect(result?.distance).toBeCloseTo(0.5, 1);
   });
   it('returns null for empty landmarks', () => {
     expect(findNearestLandmark([], 100)).toBeNull();

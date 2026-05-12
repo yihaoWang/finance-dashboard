@@ -12,6 +12,7 @@ import { insights } from './routes/insights';
 import { sentiment } from './routes/sentiment';
 import { scheduled } from './cron';
 import { insertDailyValue } from './cache/d1-sentiment';
+import { runSentimentDaily } from './cron';
 import type { IndicatorKey } from '@fd/shared';
 
 export type Env = {
@@ -61,6 +62,34 @@ app.post('/api/admin/sentiment-backfill', async (c) => {
     value: number;
   }>();
   await insertDailyValue(c.env.DB, indicator, date, value);
+  return c.json({ ok: true });
+});
+
+app.post('/api/admin/sentiment-backfill-bulk', async (c) => {
+  const auth = c.req.header('authorization');
+  if (auth !== `Bearer ${c.env.ADMIN_TOKEN}`) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+  const { rows } = await c.req.json<{
+    rows: Array<{ indicator: IndicatorKey; date: string; value: number }>;
+  }>();
+  const stmts = rows.map((r) =>
+    c.env.DB.prepare(
+      'INSERT INTO sentiment_history (indicator, date, value) VALUES (?1, ?2, ?3) ON CONFLICT(indicator, date) DO UPDATE SET value=excluded.value',
+    ).bind(r.indicator, r.date, r.value),
+  );
+  await c.env.DB.batch(stmts);
+  return c.json({ ok: true, inserted: rows.length });
+});
+
+// Admin endpoint to trigger the sentiment daily pipeline on-demand (behind ADMIN_TOKEN).
+// Kept for operational convenience; safe to leave in production.
+app.post('/api/admin/sentiment-trigger-daily', async (c) => {
+  const auth = c.req.header('authorization');
+  if (auth !== `Bearer ${c.env.ADMIN_TOKEN}`) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+  await runSentimentDaily(c.env);
   return c.json({ ok: true });
 });
 

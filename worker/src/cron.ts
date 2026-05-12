@@ -11,7 +11,7 @@ import type { IndicatorKey } from '@fd/shared';
 
 const WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
 
-const runSentimentDaily = async (env: Env): Promise<void> => {
+export const runSentimentDaily = async (env: Env): Promise<void> => {
   const tasks: Array<{
     key: IndicatorKey;
     fetcher: () => Promise<{ date: string; value: number }>;
