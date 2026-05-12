@@ -170,6 +170,14 @@ export const fetchTwseMargin = async (
   return map[symbol] ?? null;
 };
 
+export const fetchMarginMaintenanceDaily = async (): Promise<{ date: string; value: number }> => {
+  throw new Error('not yet wired — see Task 9 follow-up');
+};
+
+export const fetchShortLongRatioDaily = async (): Promise<{ date: string; value: number }> => {
+  throw new Error('not yet wired — see Task 9 follow-up');
+};
+
 export const fetchTwseForeignHolding = async (
   kv: KVNamespace,
   symbol: string,
