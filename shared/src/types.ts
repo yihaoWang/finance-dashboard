@@ -155,3 +155,44 @@ export type FinancialsBundle = {
   history: QuarterRow[];
   fetchedAt: number;
 };
+
+export type IndicatorKey =
+  | 'margin_maintenance'
+  | 'short_long_ratio'
+  | 'institutional_5d'
+  | 'foreign_futures_oi'
+  | 'breadth_adr'
+  | 'options_pcr';
+
+export type SentimentZone = 'healthy' | 'neutral' | 'caution' | 'danger';
+
+export interface LandmarkPoint {
+  event: string;
+  value: number;
+  date: string;
+}
+
+export interface SentimentIndicator {
+  key: IndicatorKey;
+  label: string;
+  value: number;
+  unit: string;
+  change5d: number;
+  percentile: number;
+  zone: SentimentZone;
+  nearestLandmark: (LandmarkPoint & { distance: number }) | null;
+  landmarks: LandmarkPoint[];
+  explanation: string;
+}
+
+export interface FearGreedSnapshot {
+  value: number;
+  label: 'Extreme Fear' | 'Fear' | 'Neutral' | 'Greed' | 'Extreme Greed';
+  percentile: number;
+}
+
+export interface SentimentBundle {
+  fearGreed: FearGreedSnapshot;
+  indicators: SentimentIndicator[];
+  updatedAt: string;
+}
