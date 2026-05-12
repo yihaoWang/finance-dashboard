@@ -9,9 +9,13 @@ import { digest } from './routes/digest';
 import { financials } from './routes/financials';
 import { events } from './routes/events';
 import { insights } from './routes/insights';
+import { sentiment } from './routes/sentiment';
 import { scheduled } from './cron';
+import { insertDailyValue } from './cache/d1-sentiment';
+import type { IndicatorKey } from '@fd/shared';
 
 export type Env = {
+  ADMIN_TOKEN: string;
   AI: Ai;
   DB: D1Database;
   DIGEST_TOKEN?: string;
@@ -44,6 +48,21 @@ app.route('/api/digest', digest);
 app.route('/api/financials', financials);
 app.route('/api/events', events);
 app.route('/api/insights', insights);
+app.route('/api/sentiment', sentiment);
+
+app.post('/api/admin/sentiment-backfill', async (c) => {
+  const auth = c.req.header('authorization');
+  if (auth !== `Bearer ${c.env.ADMIN_TOKEN}`) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+  const { indicator, date, value } = await c.req.json<{
+    indicator: IndicatorKey;
+    date: string;
+    value: number;
+  }>();
+  await insertDailyValue(c.env.DB, indicator, date, value);
+  return c.json({ ok: true });
+});
 
 export { app };
 export default { fetch: app.fetch.bind(app), scheduled };

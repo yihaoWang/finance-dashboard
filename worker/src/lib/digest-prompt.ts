@@ -1,4 +1,4 @@
-import type { Insight } from '@fd/shared';
+import type { Insight, SentimentBundle } from '@fd/shared';
 import type { FredSnapshot } from '../sources/fred';
 import type { TwseBwibbu } from '../sources/twse';
 import type { ChipDaily } from '../sources/twse-chips';
@@ -39,7 +39,25 @@ G. 行為面警示：牛市持續越久，散戶風險偏好越易失真；當�
 給出短中期（1 週至 1 季）可執行的操作建議，須具備：(1) 方向（加碼 / 持有 / 減碼 / 觀望）；(2) 條件式觸發（明確點位、指標水位或事件，例：費半跌破 200 日均線、外資連 5 日賣超、Anthropic 估值停滯）；(3) 風險控制（停損條件或部位上限）。所有點位、百分比必須引用 user message 中的數字，不得自行虛構。如果資料不足以給出方向，請寫「資料不足，建議觀望」並說明缺什麼。
 
 ## 情緒
-評估短期市場情緒，根據新聞標題的整體語氣、量價方向、外部觀點的傾向、以及框架 F、G 的反向訊號是否浮現。`;
+評估短期市場情緒，根據新聞標題的整體語氣、量價方向、外部觀點的傾向、以及框架 F、G 的反向訊號是否浮現。
+
+action_plan 段落必須結合 <sentiment> 區塊中至少 2 個指標，並引用接近的歷史事件作為定位（例：「融資維持率接近 2022 熊市底，可在 138 區間分批進場」）。若 <sentiment> 區塊缺失或為空，則忽略此規則。`;
+
+export const formatSentimentForPrompt = (bundle: SentimentBundle): string => {
+  const lines = bundle.indicators.map((ind) => {
+    const change = `${ind.change5d >= 0 ? '+' : ''}${ind.change5d}`;
+    const landmark = ind.nearestLandmark
+      ? `, 接近「${ind.nearestLandmark.event}」(${ind.nearestLandmark.value}${ind.unit})`
+      : '';
+    return `- ${ind.label}: ${ind.value}${ind.unit} (5D ${change}, percentile ${ind.percentile}, zone=${ind.zone}${landmark})`;
+  });
+  return [
+    '<sentiment>',
+    `Fear-Greed Index: ${bundle.fearGreed.value} (${bundle.fearGreed.label})`,
+    ...lines,
+    '</sentiment>',
+  ].join('\n');
+};
 
 type BuildPromptArgs = {
   scope: 'market' | 'stock';
@@ -51,12 +69,19 @@ type BuildPromptArgs = {
   news: NewsItem[];
   quote: YahooQuote | null;
   insights?: Insight[];
+  sentimentBlock?: string;
 };
 
 export const buildPrompt = (args: BuildPromptArgs): string => {
-  const { scope, symbol, date, fred, twseMarket, chips, news, quote, insights } = args;
+  const { scope, symbol, date, fred, twseMarket, chips, news, quote, insights, sentimentBlock } = args;
 
   const lines: string[] = [];
+
+  if (sentimentBlock) {
+    lines.push(sentimentBlock);
+    lines.push('');
+  }
+
   lines.push(`日期：${date}`);
   lines.push(`分析範圍：${scope === 'market' ? '大盤總覽' : `個股 ${symbol}`}`);
   lines.push('');

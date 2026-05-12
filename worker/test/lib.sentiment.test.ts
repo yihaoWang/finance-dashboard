@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { classifySentiment } from '../src/lib/sentiment';
+import { classifySentiment, computePercentile, findNearestLandmark, classifyZone, computeFearGreed } from '../src/lib/sentiment';
+import { HISTORICAL_LANDMARKS } from '../src/data/historical-landmarks';
 
 describe('classifySentiment', () => {
   it('returns positive for bullish keywords', () => {
@@ -36,5 +37,60 @@ describe('classifySentiment', () => {
 
   it('handles 創新高 as positive', () => {
     expect(classifySentiment('股價創新高')).toBe('positive');
+  });
+});
+
+describe('computePercentile', () => {
+  it('returns 0 for value below all history', () => {
+    expect(computePercentile([100, 120, 140, 160], 50)).toBe(0);
+  });
+  it('returns 100 for value above all history', () => {
+    expect(computePercentile([100, 120, 140, 160], 200)).toBe(100);
+  });
+  it('returns ~50 for median value', () => {
+    expect(computePercentile([100, 120, 140, 160], 130)).toBeGreaterThanOrEqual(40);
+    expect(computePercentile([100, 120, 140, 160], 130)).toBeLessThanOrEqual(60);
+  });
+  it('returns 0 for empty history', () => {
+    expect(computePercentile([], 100)).toBe(0);
+  });
+});
+
+describe('findNearestLandmark', () => {
+  it('returns the landmark closest in value', () => {
+    const result = findNearestLandmark(HISTORICAL_LANDMARKS.margin_maintenance, 140);
+    expect(result?.event).toBe('2022 升息熊市底');
+    expect(result?.distance).toBe(2);
+  });
+  it('returns null for empty landmarks', () => {
+    expect(findNearestLandmark([], 100)).toBeNull();
+  });
+});
+
+describe('classifyZone (margin_maintenance: higher=healthier)', () => {
+  it('danger when percentile < 15', () => {
+    expect(classifyZone('margin_maintenance', 10)).toBe('danger');
+  });
+  it('caution when 15 <= p < 35', () => {
+    expect(classifyZone('margin_maintenance', 25)).toBe('caution');
+  });
+  it('healthy when p >= 65', () => {
+    expect(classifyZone('margin_maintenance', 80)).toBe('healthy');
+  });
+});
+
+describe('computeFearGreed', () => {
+  it('returns 0-100 numeric score with label', () => {
+    const out = computeFearGreed({
+      marginMaintenancePercentile: 20,
+      shortLongRatioPercentile: 80,
+      institutional5dPercentile: 30,
+      foreignFuturesOiPercentile: 25,
+      breadthAdrPercentile: 20,
+      optionsPcrPercentile: 75,
+    });
+    expect(out.value).toBeGreaterThanOrEqual(0);
+    expect(out.value).toBeLessThanOrEqual(100);
+    expect(['Extreme Fear', 'Fear', 'Neutral', 'Greed', 'Extreme Greed']).toContain(out.label);
   });
 });

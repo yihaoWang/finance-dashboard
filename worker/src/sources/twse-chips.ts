@@ -99,6 +99,10 @@ const fetchAll = async (opts: Opts): Promise<Record<string, ChipDaily>> => {
   return {};
 };
 
+export const fetchInstitutional5dDaily = async (): Promise<{ date: string; value: number }> => {
+  throw new Error('not yet wired — see Task 9 follow-up');
+};
+
 export const fetchTwseChips = async (
   kv: KVNamespace,
   symbol: string,
