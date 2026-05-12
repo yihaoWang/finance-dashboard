@@ -99,8 +99,58 @@ const fetchAll = async (opts: Opts): Promise<Record<string, ChipDaily>> => {
   return {};
 };
 
-export const fetchInstitutional5dDaily = async (): Promise<{ date: string; value: number }> => {
-  throw new Error('not yet wired — see Task 9 follow-up');
+// FinMind dataset: TaiwanStockTotalInstitutionalInvestors
+// name="total" → buy - sell = net institutional buy/sell in NTD
+// Sum the latest 5 trading days and divide by 1e8 to get 億
+const FINMIND_BASE = 'https://api.finmindtrade.com/api/v4/data';
+
+type FinMindChipsRow = {
+  date: string;
+  name: string;
+  buy: number;
+  sell: number;
+};
+
+type FinMindChipsResponse = {
+  msg: string;
+  status: number;
+  data: FinMindChipsRow[];
+};
+
+type ChipsOpts = { fetcher?: typeof fetch };
+
+export const fetchInstitutional5dDaily = async (
+  opts: ChipsOpts = {},
+): Promise<{ date: string; value: number }> => {
+  const startDate = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalInstitutionalInvestors&start_date=${startDate}`;
+  let res: Response;
+  try {
+    res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });
+  } catch (err) {
+    console.warn('FinMind TaiwanStockTotalInstitutionalInvestors fetch failed', err);
+    throw err;
+  }
+  const json = (await res.json()) as FinMindChipsResponse;
+  if (json.status !== 200 || !Array.isArray(json.data) || json.data.length === 0) {
+    throw new Error(`FinMind institutional response unexpected: ${json.msg}`);
+  }
+  // Filter to "total" rows, group by date
+  const netByDate: Record<string, number> = {};
+  for (const row of json.data) {
+    if (row.name === 'total') {
+      netByDate[row.date] = row.buy - row.sell;
+    }
+  }
+  const sortedDates = Object.keys(netByDate).sort();
+  if (sortedDates.length === 0) throw new Error('no total rows found');
+  const latestDate = sortedDates[sortedDates.length - 1]!;
+  // Sum last 5 trading days
+  const last5 = sortedDates.slice(-5);
+  const sum5 = last5.reduce((acc, d) => acc + (netByDate[d] ?? 0), 0);
+  // Convert from NTD to 億 (1e8)
+  const value = Number((sum5 / 1e8).toFixed(2));
+  return { date: latestDate, value };
 };
 
 export const fetchTwseChips = async (

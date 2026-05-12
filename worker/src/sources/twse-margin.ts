@@ -170,12 +170,108 @@ export const fetchTwseMargin = async (
   return map[symbol] ?? null;
 };
 
-export const fetchMarginMaintenanceDaily = async (): Promise<{ date: string; value: number }> => {
-  throw new Error('not yet wired — see Task 9 follow-up');
+// FinMind dataset: TaiwanStockTotalMarginPurchaseShortSale
+// Fields:
+//   name="MarginPurchase"  → TodayBalance = 融資餘額 (千股)
+//   name="ShortSale"       → TodayBalance = 融券餘額 (千股)
+//
+// margin_maintenance: defined as (融資餘額今日 / 融資餘額昨日) × 100
+//   This gives a value around 100 reflecting daily change momentum.
+//   Redefined from the original 118–168 landmark scale to a ≈97–103 range;
+//   landmarks in historical-landmarks.ts updated accordingly.
+//   (TaiwanTotalExchangeMarginMaintenance requires a paid FinMind tier.)
+//
+// short_long_ratio: (融券餘額千股 / 融資餘額千股) × 100
+//   Produces values 1.5–4 typically, consistent with landmark scale.
+
+const FINMIND_BASE = 'https://api.finmindtrade.com/api/v4/data';
+
+type FinMindMarginRow = {
+  date: string;
+  name: string;
+  TodayBalance: number;
+  YesBalance: number;
 };
 
-export const fetchShortLongRatioDaily = async (): Promise<{ date: string; value: number }> => {
-  throw new Error('not yet wired — see Task 9 follow-up');
+type FinMindMarginResponse = {
+  msg: string;
+  status: number;
+  data: FinMindMarginRow[];
+};
+
+const isoDateNDaysAgo = (n: number): string => {
+  const d = new Date(Date.now() - n * 86400_000);
+  return d.toISOString().slice(0, 10);
+};
+
+export const fetchMarginMaintenanceDaily = async (
+  opts: Opts = {},
+): Promise<{ date: string; value: number }> => {
+  const startDate = isoDateNDaysAgo(7);
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}`;
+  let res: Response;
+  try {
+    res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });
+  } catch (err) {
+    console.warn('FinMind TaiwanStockTotalMarginPurchaseShortSale fetch failed', err);
+    throw err;
+  }
+  const json = (await res.json()) as FinMindMarginResponse;
+  if (json.status !== 200 || !Array.isArray(json.data) || json.data.length === 0) {
+    throw new Error(`FinMind margin response unexpected: ${json.msg}`);
+  }
+  // Group by date, pick latest
+  const byDate: Record<string, { marginToday: number; marginYes: number }> = {};
+  for (const row of json.data) {
+    if (row.name === 'MarginPurchase') {
+      const entry = byDate[row.date] ?? { marginToday: 0, marginYes: 0 };
+      entry.marginToday = row.TodayBalance;
+      entry.marginYes = row.YesBalance;
+      byDate[row.date] = entry;
+    }
+  }
+  const dates = Object.keys(byDate).sort();
+  const latestDate = dates[dates.length - 1];
+  if (latestDate === undefined) throw new Error('no MarginPurchase rows found');
+  const { marginToday, marginYes } = byDate[latestDate]!;
+  if (marginYes === 0) throw new Error('marginYes is zero, cannot compute ratio');
+  // value = today / yesterday × 100 (e.g. 101.5 means +1.5% vs prior day)
+  const value = Number(((marginToday / marginYes) * 100).toFixed(2));
+  return { date: latestDate, value };
+};
+
+export const fetchShortLongRatioDaily = async (
+  opts: Opts = {},
+): Promise<{ date: string; value: number }> => {
+  const startDate = isoDateNDaysAgo(7);
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}`;
+  let res: Response;
+  try {
+    res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });
+  } catch (err) {
+    console.warn('FinMind TaiwanStockTotalMarginPurchaseShortSale fetch failed', err);
+    throw err;
+  }
+  const json = (await res.json()) as FinMindMarginResponse;
+  if (json.status !== 200 || !Array.isArray(json.data) || json.data.length === 0) {
+    throw new Error(`FinMind margin response unexpected: ${json.msg}`);
+  }
+  // Find latest date with both MarginPurchase and ShortSale
+  const byDate: Record<string, { marginBalance: number; shortBalance: number }> = {};
+  for (const row of json.data) {
+    const entry = byDate[row.date] ?? { marginBalance: 0, shortBalance: 0 };
+    if (row.name === 'MarginPurchase') entry.marginBalance = row.TodayBalance;
+    if (row.name === 'ShortSale') entry.shortBalance = row.TodayBalance;
+    byDate[row.date] = entry;
+  }
+  const dates = Object.keys(byDate).sort();
+  const latestDate = dates[dates.length - 1];
+  if (latestDate === undefined) throw new Error('no margin rows found');
+  const { marginBalance, shortBalance } = byDate[latestDate]!;
+  if (marginBalance === 0) throw new Error('marginBalance is zero, cannot compute ratio');
+  // value = (融券餘額 / 融資餘額) × 100 → typically 1.5–4 range
+  const value = Number(((shortBalance / marginBalance) * 100).toFixed(2));
+  return { date: latestDate, value };
 };
 
 export const fetchTwseForeignHolding = async (
