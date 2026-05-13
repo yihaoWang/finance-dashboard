@@ -26,7 +26,7 @@ describe('GET /api/sentiment', () => {
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { data: { indicators: unknown[]; fearGreed: { value: number } } };
-    expect(body.data.indicators).toHaveLength(6);
+    expect(body.data.indicators).toHaveLength(7);
     expect(body.data.fearGreed.value).toBeGreaterThanOrEqual(0);
   });
 });

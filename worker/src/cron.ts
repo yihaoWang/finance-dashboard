@@ -4,7 +4,7 @@ import { upsertEvents } from './cache/d1-events';
 import { fetchEconomicEvents } from './sources/events';
 import { fetchForeignFuturesOI, fetchOptionsPCR } from './sources/taifex';
 import { fetchBreadthADR } from './sources/twse-breadth';
-import { fetchMarginMaintenanceDaily, fetchShortLongRatioDaily } from './sources/twse-margin';
+import { fetchMarginBalanceDaily, fetchMarginMaintenanceDaily, fetchShortLongRatioDaily } from './sources/twse-margin';
 import { fetchInstitutional5dDaily } from './sources/twse-chips';
 import { insertDailyValue } from './cache/d1-sentiment';
 import type { IndicatorKey } from '@fd/shared';
@@ -16,6 +16,7 @@ export const runSentimentDaily = async (env: Env): Promise<void> => {
     key: IndicatorKey;
     fetcher: () => Promise<{ date: string; value: number }>;
   }> = [
+    { key: 'margin_balance', fetcher: fetchMarginBalanceDaily },
     { key: 'margin_maintenance', fetcher: fetchMarginMaintenanceDaily },
     { key: 'short_long_ratio', fetcher: fetchShortLongRatioDaily },
     { key: 'institutional_5d', fetcher: fetchInstitutional5dDaily },

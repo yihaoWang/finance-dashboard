@@ -83,12 +83,13 @@ describe('classifyZone (margin_maintenance: higher=healthier)', () => {
 describe('computeFearGreed', () => {
   it('returns 0-100 numeric score with label', () => {
     const out = computeFearGreed({
-      marginMaintenancePercentile: 20,
-      shortLongRatioPercentile: 80,
-      institutional5dPercentile: 30,
-      foreignFuturesOiPercentile: 25,
       breadthAdrPercentile: 20,
+      foreignFuturesOiPercentile: 25,
+      institutional5dPercentile: 30,
+      marginBalancePercentile: 40,
+      marginMaintenancePercentile: 20,
       optionsPcrPercentile: 75,
+      shortLongRatioPercentile: 80,
     });
     expect(out.value).toBeGreaterThanOrEqual(0);
     expect(out.value).toBeLessThanOrEqual(100);

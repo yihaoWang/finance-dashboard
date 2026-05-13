@@ -29,12 +29,14 @@ export const findNearestLandmark = (
 };
 
 const HIGHER_IS_HEALTHIER: Record<IndicatorKey, boolean> = {
-  margin_maintenance: true,
-  short_long_ratio: false,
-  institutional_5d: true,
-  foreign_futures_oi: true,
   breadth_adr: true,
+  foreign_futures_oi: true,
+  institutional_5d: true,
+  // Higher margin balance = more retail leverage = caution (contrarian bearish signal)
+  margin_balance: false,
+  margin_maintenance: true,
   options_pcr: false,
+  short_long_ratio: false,
 };
 
 export const classifyZone = (key: IndicatorKey, percentile: number): SentimentZone => {
@@ -47,21 +49,32 @@ export const classifyZone = (key: IndicatorKey, percentile: number): SentimentZo
 };
 
 interface FearGreedInputs {
-  marginMaintenancePercentile: number;
-  shortLongRatioPercentile: number;
-  institutional5dPercentile: number;
-  foreignFuturesOiPercentile: number;
   breadthAdrPercentile: number;
+  foreignFuturesOiPercentile: number;
+  institutional5dPercentile: number;
+  // Higher margin balance = more retail leverage = greedy signal
+  marginBalancePercentile: number;
+  marginMaintenancePercentile: number;
   optionsPcrPercentile: number;
+  shortLongRatioPercentile: number;
 }
 
 export const computeFearGreed = (inputs: FearGreedInputs): FearGreedSnapshot => {
+  // Weights (sum = 1.0):
+  //   marginMaintenance  0.15
+  //   marginBalance      0.15  (higher balance = more leverage = greedy)
+  //   shortLongRatio     0.12  (inverted: higher ratio = less greedy)
+  //   institutional5d    0.18
+  //   foreignFuturesOi   0.12
+  //   breadthAdr         0.13
+  //   optionsPcr         0.15  (inverted: higher PCR = fear = less greedy)
   const greedScore =
-    inputs.marginMaintenancePercentile * 0.2 +
-    (100 - inputs.shortLongRatioPercentile) * 0.15 +
-    inputs.institutional5dPercentile * 0.2 +
-    inputs.foreignFuturesOiPercentile * 0.15 +
-    inputs.breadthAdrPercentile * 0.15 +
+    inputs.marginMaintenancePercentile * 0.15 +
+    inputs.marginBalancePercentile * 0.15 +
+    (100 - inputs.shortLongRatioPercentile) * 0.12 +
+    inputs.institutional5dPercentile * 0.18 +
+    inputs.foreignFuturesOiPercentile * 0.12 +
+    inputs.breadthAdrPercentile * 0.13 +
     (100 - inputs.optionsPcrPercentile) * 0.15;
   const value = Math.round(greedScore);
   const label: FearGreedSnapshot['label'] =

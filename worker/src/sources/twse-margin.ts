@@ -240,6 +240,39 @@ export const fetchMarginMaintenanceDaily = async (
   return { date: latestDate, value };
 };
 
+// FinMind MarginPurchaseMoney.TodayBalance is in NTD.
+// Divide by 1e8 to convert to 億元.
+export const fetchMarginBalanceDaily = async (
+  opts: Opts = {},
+): Promise<{ date: string; value: number }> => {
+  const startDate = isoDateNDaysAgo(7);
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}`;
+  let res: Response;
+  try {
+    res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });
+  } catch (err) {
+    console.warn('FinMind TaiwanStockTotalMarginPurchaseShortSale (MarginPurchaseMoney) fetch failed', err);
+    throw err;
+  }
+  const json = (await res.json()) as FinMindMarginResponse;
+  if (json.status !== 200 || !Array.isArray(json.data) || json.data.length === 0) {
+    throw new Error(`FinMind margin response unexpected: ${json.msg}`);
+  }
+  // Group by date, pick latest with MarginPurchaseMoney row
+  const byDate: Record<string, number> = {};
+  for (const row of json.data) {
+    if (row.name === 'MarginPurchaseMoney') {
+      byDate[row.date] = row.TodayBalance;
+    }
+  }
+  const dates = Object.keys(byDate).sort();
+  const latestDate = dates[dates.length - 1];
+  if (latestDate === undefined) throw new Error('no MarginPurchaseMoney rows found');
+  // Convert NTD → 億元 (1 億 = 1e8 NTD)
+  const value = Number((byDate[latestDate]! / 1e8).toFixed(2));
+  return { date: latestDate, value };
+};
+
 export const fetchShortLongRatioDaily = async (
   opts: Opts = {},
 ): Promise<{ date: string; value: number }> => {

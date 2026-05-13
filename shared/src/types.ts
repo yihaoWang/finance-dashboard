@@ -157,12 +157,13 @@ export type FinancialsBundle = {
 };
 
 export type IndicatorKey =
-  | 'margin_maintenance'
-  | 'short_long_ratio'
-  | 'institutional_5d'
-  | 'foreign_futures_oi'
   | 'breadth_adr'
-  | 'options_pcr';
+  | 'foreign_futures_oi'
+  | 'institutional_5d'
+  | 'margin_balance'
+  | 'margin_maintenance'
+  | 'options_pcr'
+  | 'short_long_ratio';
 
 export type SentimentZone = 'healthy' | 'neutral' | 'caution' | 'danger';
 

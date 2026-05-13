@@ -41,4 +41,12 @@ export const HISTORICAL_LANDMARKS: Record<IndicatorKey, LandmarkPoint[]> = {
     { event: '2022 熊市底', value: 1.62, date: '2022-10-25' },
     { event: '2024 多頭高點', value: 0.65, date: '2024-07-11' },
   ],
+  // margin_balance: 融資餘額（億元），來源 FinMind MarginPurchaseMoney.TodayBalance / 1e8
+  // 台股歷史區間約 2500–6000 億（2016年後）。極端低點 = 恐慌去槓桿；極端高點 = 過度槓桿警訊。
+  margin_balance: [
+    { event: '2020 COVID 急跌底', value: 2800, date: '2020-03-19' },
+    { event: '2022 升息熊市底', value: 3200, date: '2022-10-25' },
+    { event: '2024 多頭高點', value: 5500, date: '2024-07-11' },
+    { event: '2025 高槓桿', value: 5800, date: '2025-06-15' },
+  ],
 };

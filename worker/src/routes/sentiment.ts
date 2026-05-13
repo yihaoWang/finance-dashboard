@@ -20,12 +20,13 @@ const TTL = 1800;
 export const sentiment = new Hono<{ Bindings: Env }>();
 
 const LABELS: Record<IndicatorKey, { label: string; unit: string }> = {
-  margin_maintenance: { label: '融資維持率', unit: '%' },
-  short_long_ratio: { label: '券資比', unit: '%' },
-  institutional_5d: { label: '三大法人 5 日累計', unit: '億' },
-  foreign_futures_oi: { label: '外資台指期淨未平倉', unit: '口' },
   breadth_adr: { label: '大盤騰落比 ADR', unit: '' },
+  foreign_futures_oi: { label: '外資台指期淨未平倉', unit: '口' },
+  institutional_5d: { label: '三大法人 5 日累計', unit: '億' },
+  margin_balance: { label: '融資餘額', unit: '億' },
+  margin_maintenance: { label: '融資維持率', unit: '%' },
   options_pcr: { label: '選擇權 PCR', unit: '' },
+  short_long_ratio: { label: '券資比', unit: '%' },
 };
 
 const buildIndicator = (
@@ -70,23 +71,25 @@ sentiment.get('/', async (c) => {
     } satisfies ApiResponse<SentimentBundle>);
   }
   const keys: IndicatorKey[] = [
-    'margin_maintenance',
-    'short_long_ratio',
-    'institutional_5d',
-    'foreign_futures_oi',
     'breadth_adr',
+    'foreign_futures_oi',
+    'institutional_5d',
+    'margin_balance',
+    'margin_maintenance',
     'options_pcr',
+    'short_long_ratio',
   ];
   const indicators = await Promise.all(
     keys.map(async (k) => buildIndicator(k, await getHistory(c.env.DB, k))),
   );
   const fearGreed = computeFearGreed({
-    marginMaintenancePercentile: indicators[0].percentile,
-    shortLongRatioPercentile: indicators[1].percentile,
+    breadthAdrPercentile: indicators[0].percentile,
+    foreignFuturesOiPercentile: indicators[1].percentile,
     institutional5dPercentile: indicators[2].percentile,
-    foreignFuturesOiPercentile: indicators[3].percentile,
-    breadthAdrPercentile: indicators[4].percentile,
+    marginBalancePercentile: indicators[3].percentile,
+    marginMaintenancePercentile: indicators[4].percentile,
     optionsPcrPercentile: indicators[5].percentile,
+    shortLongRatioPercentile: indicators[6].percentile,
   });
   const bundle: SentimentBundle = {
     fearGreed,
