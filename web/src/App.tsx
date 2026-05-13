@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { DashboardPage } from './pages/DashboardPage';
-import { DigestHistory } from './pages/DigestHistory';
+import { MarketOverviewPage } from './pages/MarketOverviewPage';
+import { StockDetailPage } from './pages/StockDetailPage';
 import { FinancialsPage } from './pages/FinancialsPage';
+import { DigestHistory } from './pages/DigestHistory';
 
 const STORAGE_KEY = 'fd:watchlist';
 const DEFAULT_WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
@@ -21,8 +22,6 @@ const loadWatchlist = (): string[] => {
 };
 
 export const App = () => {
-  const [symbol, setSymbol] = useState('2330');
-  const [input, setInput] = useState('2330');
   const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
 
   useEffect(() => {
@@ -33,19 +32,17 @@ export const App = () => {
     <Routes>
       <Route
         path="/"
-        element={
-          <DashboardPage
-            symbol={symbol}
-            input={input}
-            setInput={setInput}
-            setSymbol={setSymbol}
-            watchlist={watchlist}
-            setWatchlist={setWatchlist}
-          />
-        }
+        element={<MarketOverviewPage watchlist={watchlist} setWatchlist={setWatchlist} />}
+      />
+      <Route
+        path="/stock"
+        element={<StockDetailPage watchlist={watchlist} setWatchlist={setWatchlist} />}
       />
       <Route path="/digest" element={<DigestHistory watchlist={watchlist} />} />
-      <Route path="/financials" element={<FinancialsPage watchlist={watchlist} setWatchlist={setWatchlist} />} />
+      <Route
+        path="/financials"
+        element={<FinancialsPage watchlist={watchlist} setWatchlist={setWatchlist} />}
+      />
     </Routes>
   );
 };

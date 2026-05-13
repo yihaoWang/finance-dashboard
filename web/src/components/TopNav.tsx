@@ -1,84 +1,66 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-type Props = {
-  currentSymbol?: string;
-  input: string;
-  onInputChange: (v: string) => void;
-  onSubmit: () => void;
-};
-
-const SCROLL_TABS: { id: string; label: string }[] = [
-  { id: 'overview', label: '總覽' },
-  { id: 'fundamentals', label: '基本面' },
-  { id: 'technicals', label: '技術面' },
-  { id: 'chips', label: '籌碼' },
-  { id: 'macro', label: '宏觀' },
+const NAV_LINKS: { path: string; label: string }[] = [
+  { path: '/', label: '📊 總體市場' },
+  { path: '/stock', label: '📈 個股分析' },
+  { path: '/financials', label: '📑 財報' },
 ];
 
-const HEADER_OFFSET = 80;
-
-const scrollToSection = (id: string) => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-  window.scrollTo({ top, behavior: 'smooth' });
+type Props = {
+  watchlist?: string[];
+  setWatchlist?: (v: string[]) => void;
+  onAddSymbol?: (symbol: string) => void;
 };
 
-export const TopNav = ({ currentSymbol, input, onInputChange, onSubmit }: Props) => {
-  const [activeSection, setActiveSection] = useState('overview');
+export const TopNav = ({ onAddSymbol }: Props) => {
+  const [input, setInput] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isDigestPage = location.pathname.startsWith('/digest');
-  const isFinancialsPage = location.pathname.startsWith('/financials');
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
-  useEffect(() => {
-    if (isDigestPage || isFinancialsPage) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0] !== undefined) setActiveSection(visible[0].target.id);
-      },
-      { rootMargin: `-${HEADER_OFFSET + 20}px 0px -50% 0px`, threshold: [0, 0.25, 0.5, 1] },
-    );
-    for (const tab of SCROLL_TABS) {
-      const el = document.getElementById(tab.id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, [isDigestPage]);
-
-  const handleScrollTab = (id: string) => {
-    if (isDigestPage || isFinancialsPage) {
-      navigate(`/#${id}`);
-    } else {
-      scrollToSection(id);
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = input.trim().toUpperCase();
+    if (v.length < 4) return;
+    onAddSymbol?.(v);
+    navigate(`/stock?symbol=${v}`);
+    setInput('');
   };
 
   return (
     <header className="sticky top-0 z-20 backdrop-blur bg-ink-950/80 border-b border-ink-700">
       <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-soft" />
           <span className="font-semibold text-zinc-100">Tickr</span>
-        </div>
-        <div className="flex-1 min-w-[240px] max-w-md ml-2">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSubmit();
-            }}
-            className="relative"
-          >
+        </Link>
+        <nav className="flex items-center gap-1 text-sm">
+          {NAV_LINKS.map(({ path, label }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
+                isActive(path)
+                  ? 'text-zinc-100 border-b-2 border-accent'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-ink-800'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex-1 min-w-[200px] max-w-sm ml-2">
+          <form onSubmit={handleSubmit} className="relative">
             <input
               className="w-full bg-ink-900 border border-ink-700 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-accent"
-              placeholder="輸入股票代號或名稱（例：2330、台積電）"
+              placeholder="輸入股票代號（例：2330）"
               value={input}
-              onChange={(e) => onInputChange(e.target.value)}
+              onChange={(e) => setInput(e.target.value)}
             />
             <svg
               className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500"
@@ -96,51 +78,6 @@ export const TopNav = ({ currentSymbol, input, onInputChange, onSubmit }: Props)
             </svg>
           </form>
         </div>
-        <nav className="flex items-center gap-1 text-sm text-zinc-400">
-          {SCROLL_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleScrollTab(tab.id)}
-              className={`px-3 py-1.5 rounded-md transition-colors ${
-                !isDigestPage && activeSection === tab.id
-                  ? 'text-zinc-100 bg-ink-800'
-                  : 'hover:bg-ink-800 hover:text-zinc-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => navigate('/digest')}
-            className={`px-3 py-1.5 rounded-md transition-colors ${
-              isDigestPage
-                ? 'text-zinc-100 bg-ink-800'
-                : 'hover:bg-ink-800 hover:text-zinc-200'
-            }`}
-          >
-            AI 解讀
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/financials?symbol=${encodeURIComponent(currentSymbol ?? '2330')}`)}
-            className={`px-3 py-1.5 rounded-md transition-colors ${
-              isFinancialsPage
-                ? 'text-zinc-100 bg-ink-800'
-                : 'hover:bg-ink-800 hover:text-zinc-200'
-            }`}
-          >
-            財報分析
-          </button>
-        </nav>
-        <button
-          type="button"
-          onClick={onSubmit}
-          className="ml-auto px-3 py-1.5 rounded-md bg-accent text-white text-sm"
-        >
-          查詢
-        </button>
       </div>
     </header>
   );

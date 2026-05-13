@@ -1,4 +1,4 @@
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { TopNav } from '../components/TopNav';
 import { DigestSection } from '../components/DigestSection';
 import { useDigestHistory } from '../hooks/useDigestHistory';
@@ -9,8 +9,6 @@ type Props = { watchlist: string[] };
 
 export const DigestHistory = ({ watchlist }: Props) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-
   const scope = (searchParams.get('scope') ?? 'market') as DigestScope;
   const symbol = searchParams.get('symbol') ?? undefined;
   const date = searchParams.get('date') ?? undefined;
@@ -40,11 +38,7 @@ export const DigestHistory = ({ watchlist }: Props) => {
 
   return (
     <div className="min-h-screen bg-ink-950">
-      <TopNav
-        input=""
-        onInputChange={() => undefined}
-        onSubmit={() => navigate('/')}
-      />
+      <TopNav />
       <div className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6">
         {/* Sidebar */}
         <aside className="w-64 shrink-0">

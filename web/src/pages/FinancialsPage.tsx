@@ -144,12 +144,7 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
 
   return (
     <div className="min-h-screen bg-ink-950">
-      <TopNav
-        input={input}
-        onInputChange={setInput}
-        onSubmit={submit}
-        currentSymbol={symbol}
-      />
+      <TopNav />
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} onRemove={remove} />
 

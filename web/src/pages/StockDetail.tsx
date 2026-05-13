@@ -2,8 +2,6 @@ import { useStock } from '../hooks/useStock';
 import { Hero } from '../components/Hero';
 import { KpiGrid } from '../components/KpiGrid';
 import { PriceChart } from '../components/PriceChart';
-import { MacroPanel } from '../components/MacroPanel';
-import { SentimentPanel } from '../components/SentimentPanel';
 import { AnalysisPanels } from '../components/AnalysisPanels';
 import { NewsPanel } from '../components/NewsPanel';
 
@@ -24,14 +22,8 @@ export const StockDetail = ({ symbol }: Props) => {
         <Hero quote={quote} kpi={kpi} />
         <KpiGrid kpi={kpi} />
       </div>
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
-        <div id="macro" className="scroll-mt-24">
-          <MacroPanel />
-        </div>
-      </section>
       <div className="mb-6">
-        <SentimentPanel />
+        <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
       </div>
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
       <NewsPanel symbol={symbol} />
