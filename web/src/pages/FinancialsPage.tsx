@@ -235,8 +235,8 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   📄
                 </div>
                 <div>
-                  <div>{latestRow ? `${latestRow.year} Q${latestRow.quarter} 季報` : '最新季報'}</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">合併財報 + 會計師報告（MOPS 預填）</div>
+                  <div>三大財報（損益 / 資負 / 現金流）</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">Yahoo 財報 · 含季度與年度比較</div>
                 </div>
               </a>
               <a
@@ -249,8 +249,8 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   📊
                 </div>
                 <div>
-                  <div>{latestRow ? `${latestRow.year} 年法說會` : '法說會簡報'}</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">含簡報、影音、會議紀錄</div>
+                  <div>歷年詳細財報分析</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">Goodinfo · 經營績效 + 比率歷史</div>
                 </div>
               </a>
               <a
@@ -263,8 +263,8 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   📂
                 </div>
                 <div>
-                  <div>公司基本資料 / 重大訊息</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">MOPS 個股總覽</div>
+                  <div>公司基本資料</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">證交所官方公司資料頁</div>
                 </div>
               </a>
               <a

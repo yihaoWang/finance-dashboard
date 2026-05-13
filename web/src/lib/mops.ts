@@ -8,30 +8,28 @@ const irMap: Record<string, string> = {
 
 type Args = { symbol: string; year?: number; quarter?: number };
 
-const rocYear = (year: number): string => String(year - 1911);
-const seasonCode = (q: number): string => String(q).padStart(2, '0');
+// 公開資訊觀測站 (MOPS) 不接受直連 GET（需要 session/referer），點下去會跳「頁面無法執行」。
+// 改成下列 100% bookmarkable 的真實財報來源：
+// - Yahoo 財報：完整三大表 + 季度比較，直接 deep-link 可用
+// - Goodinfo：詳細財報歷史分析
+// - TWSE 公司資料頁：官方公司基本資料 + 重大訊息列表
+// - IR 官網：公司投資人關係頁（手動維護的對應表）
 
-export const mopsLinks = ({ symbol, year, quarter }: Args) => {
-  const base = 'https://mops.twse.com.tw/mops/web';
+export const mopsLinks = ({ symbol }: Args) => {
+  const incomeStatement = `https://tw.stock.yahoo.com/quote/${symbol}.TW/income-statement`;
+  const balanceSheet = `https://tw.stock.yahoo.com/quote/${symbol}.TW/balance-sheet`;
+  const cashFlow = `https://tw.stock.yahoo.com/quote/${symbol}.TW/cash-flow-statement`;
+  const goodinfo = `https://goodinfo.tw/tw/StockBzPerformance.asp?STOCK_ID=${symbol}`;
+  const twseCompany = `https://www.twse.com.tw/zh/company/${symbol}`;
+  const irPage = irMap[symbol] ?? twseCompany;
 
-  // 季報（合併財務報告書 + 個體財報 + 會計師查核報告書 etc.）
-  // t164sb01 接受 co_id + year（民國年） + season（01/02/03/04）— 預填後 MOPS 會直接列出該季所有檔案下載連結
-  const quarterReport =
-    year !== undefined && quarter !== undefined
-      ? `${base}/t164sb01?step=1&firstin=1&off=1&queryName=co_id&inpuType=co_id&TYPEK=all&isnew=true&co_id=${symbol}&year=${rocYear(year)}&season=${seasonCode(quarter)}`
-      : `${base}/t164sb01?step=1&firstin=1&off=1&queryName=co_id&inpuType=co_id&TYPEK=all&isnew=true&co_id=${symbol}`;
-
-  // 法說會 — t100sb02_1 接受 co_id + YEAR（西元）
-  const legalPresentations =
-    year !== undefined
-      ? `${base}/t100sb02_1?step=1&firstin=1&co_id=${symbol}&YEAR=${year}`
-      : `${base}/t100sb02_1?step=1&firstin=1&co_id=${symbol}`;
-
-  // 重大訊息 / 公司基本資料
-  const reportsList = `${base}/t05st02?step=1&co_id=${symbol}`;
-
-  // IR 官方頁
-  const irPage = irMap[symbol] ?? reportsList;
-
-  return { quarterReport, legalPresentations, reportsList, irPage };
+  return {
+    quarterReport: incomeStatement,
+    legalPresentations: goodinfo,
+    reportsList: twseCompany,
+    irPage,
+    incomeStatement,
+    balanceSheet,
+    cashFlow,
+  };
 };
