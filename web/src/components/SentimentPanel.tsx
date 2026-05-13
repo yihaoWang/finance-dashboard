@@ -9,23 +9,14 @@ export const SentimentPanel = () => {
   return (
     <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
       <h2 className="mb-4 text-lg font-semibold text-slate-100">市場情緒</h2>
-      {(() => {
-        const gaugeIndicator = data.data.indicators.find((i) => i.key === 'short_long_ratio');
-        const gridIndicators = data.data.indicators.filter((i) => i.key !== 'short_long_ratio');
-        return (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-[260px_1fr]">
-            <div className="flex flex-col gap-4">
-              <FearGreedGauge snapshot={data.data.fearGreed} />
-              {gaugeIndicator !== undefined && <SentimentCard indicator={gaugeIndicator} />}
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {gridIndicators.map((ind) => (
-                <SentimentCard key={ind.key} indicator={ind} />
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex items-center justify-center rounded-lg border border-slate-700/60 bg-slate-900/40 p-4">
+          <FearGreedGauge snapshot={data.data.fearGreed} />
+        </div>
+        {data.data.indicators.map((ind) => (
+          <SentimentCard key={ind.key} indicator={ind} />
+        ))}
+      </div>
     </section>
   );
 };
