@@ -115,7 +115,7 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
           <MetricLabel term="financingBalance" className="text-xs text-zinc-500" />
           <div className="num text-zinc-200 mt-0.5">
             {chips?.financingBalance != null
-              ? `${(chips.financingBalance / 1000).toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`
+              ? `${chips.financingBalance.toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`
               : '—'}
           </div>
         </div>
@@ -123,7 +123,7 @@ export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
           <MetricLabel term="shortBalance" className="text-xs text-zinc-500" />
           <div className="num text-zinc-200 mt-0.5">
             {chips?.shortBalance != null
-              ? `${(chips.shortBalance / 1000).toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`
+              ? `${chips.shortBalance.toLocaleString('zh-TW', { maximumFractionDigits: 0 })} 張`
               : '—'}
           </div>
         </div>
