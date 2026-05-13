@@ -39,12 +39,20 @@ export const SentimentCard = ({ indicator }: Props) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="text-sm text-slate-300">{indicator.label}</span>
-          <span
-            title={INDICATOR_DESCRIPTIONS[indicator.key]}
-            className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-slate-500 text-[10px] font-semibold text-slate-400 hover:border-slate-300 hover:text-slate-200"
-            aria-label={`${indicator.label} 說明`}
-          >
-            i
+          <span className="group relative inline-flex">
+            <span
+              tabIndex={0}
+              className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-slate-500 text-[10px] font-semibold text-slate-400 hover:border-slate-300 hover:text-slate-200 focus:border-slate-300 focus:text-slate-200 focus:outline-none"
+              aria-label={`${indicator.label} 說明`}
+            >
+              i
+            </span>
+            <span
+              role="tooltip"
+              className="pointer-events-none invisible absolute left-0 top-5 z-20 w-64 rounded-md border border-slate-700 bg-slate-900 p-2.5 text-xs leading-relaxed text-slate-200 opacity-0 shadow-lg shadow-black/40 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+            >
+              {INDICATOR_DESCRIPTIONS[indicator.key]}
+            </span>
           </span>
         </div>
         <span className={`h-2 w-2 rounded-full ${ZONE_DOT[indicator.zone]}`} />
