@@ -49,12 +49,29 @@ export type Freshness = {
 };
 
 export type MacroQuote = { value: number; changePct: number };
+
+export type FredObservation = { latest: number; prev: number; date: string } | null;
+
+export type FredSnapshot = {
+  dgs10: FredObservation;
+  cpi: FredObservation;
+  pce: FredObservation;
+  unrate: FredObservation;
+  fedFunds: FredObservation;
+  nfpChange: FredObservation;
+  gdpYoy: FredObservation;
+  pmi: FredObservation;
+  ppi: FredObservation;
+  umcsent: FredObservation;
+};
+
 export type MacroBundle = {
   us10y: MacroQuote | null;
   vix: MacroQuote | null;
   sox: MacroQuote | null;
   dxy: MacroQuote | null;
   twd: MacroQuote | null;
+  fred?: FredSnapshot;
 };
 
 export type ApiResponse<T> = {
