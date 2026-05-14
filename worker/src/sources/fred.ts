@@ -65,7 +65,7 @@ const fetchYoySeries = async (
   apiKey: string,
   opts: Opts,
 ): Promise<FredObservation> => {
-  const url = `${BASE_URL}?series_id=${seriesId}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=13`;
+  const url = `${BASE_URL}?series_id=${seriesId}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=15`;
   const res = await fetchWithRetry(
     url,
     { headers: { Accept: 'application/json' } },
