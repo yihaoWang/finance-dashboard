@@ -156,13 +156,16 @@ const fmt = (v: number | null, decimals = 2): string => {
 };
 
 const CriterionRow = ({ c }: CriterionRowProps) => (
-  <div className={`flex items-start gap-2 py-1 border-b border-zinc-800/50 last:border-0 text-xs ${c.passed === false ? 'opacity-70' : ''}`}>
-    <StatusIcon passed={c.passed} />
-    <span className={`shrink-0 w-4 text-center ${c.priority ? 'text-amber-400' : 'text-zinc-600'}`}>
-      {c.priority ? '★' : ' '}
-    </span>
-    <span className="text-zinc-300 flex-1">{c.id}. {c.label}</span>
-    <span className="text-zinc-500 shrink-0">{fmt(c.value)} <span className="text-zinc-700">({c.threshold})</span></span>
+  <div className={`py-1 border-b border-zinc-800/50 last:border-0 text-xs ${c.passed === false ? 'opacity-70' : ''}`}>
+    <div className="flex items-start gap-2">
+      <StatusIcon passed={c.passed} />
+      <span className={`shrink-0 w-4 text-center ${c.priority ? 'text-amber-400' : 'text-zinc-600'}`}>
+        {c.priority ? '★' : ' '}
+      </span>
+      <span className="text-zinc-300 flex-1">{c.id}. {c.label}</span>
+      <span className="text-zinc-500 shrink-0">{fmt(c.value)} <span className="text-zinc-700">({c.threshold})</span></span>
+    </div>
+    <div className="pl-10 text-xs text-slate-400 mt-0.5 leading-snug">{c.detail}</div>
   </div>
 );
 

@@ -9,6 +9,30 @@
 
 import type { AnnualFinancialRow, FiveYearFinancials, MoatCategory, PeaceBundle, PeaceCriterion, RiskCategory } from '@fd/shared';
 
+// ─── format helpers ───────────────────────────────────────────────────────────
+
+const fmtNTD = (n: number): string => {
+  const abs = Math.abs(n);
+  if (abs >= 1e12) return `${(n / 1e12).toFixed(2)} 兆`;
+  if (abs >= 1e8) return `${(n / 1e8).toFixed(0)} 億`;
+  if (abs >= 1e4) return `${(n / 1e4).toFixed(0)} 萬`;
+  return n.toFixed(0);
+};
+
+const pct = (n: number, dp = 1): string => `${n.toFixed(dp)}%`;
+
+const findWorstYoY = (vals: number[]): { idx: number; yoy: number } | null => {
+  if (vals.length < 2) return null;
+  let worst = { idx: 1, yoy: Infinity };
+  for (let i = 1; i < vals.length; i++) {
+    const prev = vals[i - 1];
+    if (prev === undefined || prev === 0) continue;
+    const yoy = ((vals[i] - prev) / Math.abs(prev)) * 100;
+    if (yoy < worst.yoy) worst = { idx: i, yoy };
+  }
+  return worst.yoy === Infinity ? null : worst;
+};
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 const cagr = (values: number[]): number | null => {
@@ -51,156 +75,312 @@ const lastValue = (values: (number | null)[]): number | null => {
 
 // ─── criterion evaluators ────────────────────────────────────────────────────
 
-const evalRevenueSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const vals = compact(rows.map((r) => r.revenue));
-  if (vals.length < 2) return { passed: null, value: null };
+const evalRevenueSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactRows = rows.filter((r) => r.revenue !== null);
+  const vals = compactRows.map((r) => r.revenue!);
+  if (vals.length < 2) return { passed: null, value: null, detail: '資料不足，無法評估營收穩定性' };
   const declined = hasDeclineBeyond(vals, 10);
-  // report last YoY as the value
   const last = vals[vals.length - 1];
   const prev = vals[vals.length - 2];
   const lastYoy = prev !== undefined && prev !== 0 ? ((last - prev) / Math.abs(prev)) * 100 : null;
-  return { passed: !declined, value: lastYoy !== undefined ? lastYoy : null };
+  const worst = findWorstYoY(vals);
+  let detail: string;
+  if (declined && worst !== null) {
+    const worstYear = compactRows[worst.idx]?.year;
+    const worstVal = vals[worst.idx];
+    const worstPrev = vals[worst.idx - 1];
+    if (worstYear !== undefined && worstVal !== undefined && worstPrev !== undefined) {
+      detail = `${worstYear} 營收 YoY ${pct(worst.yoy)}（${fmtNTD(worstPrev)} → ${fmtNTD(worstVal)}），超過 10% 衰退門檻`;
+    } else {
+      detail = `存在單年 YoY ${worst !== null ? pct(worst.yoy) : '—'} 衰退，超過 10% 門檻`;
+    }
+  } else {
+    const cagrVal = cagr(vals);
+    detail = `5年 CAGR ${cagrVal !== null ? pct(cagrVal) : '—'}；最近 YoY ${lastYoy !== null ? pct(lastYoy) : '—'}，均未衰退超過 10%`;
+  }
+  return { passed: !declined, value: lastYoy !== undefined ? lastYoy : null, detail };
 };
 
-const evalGrossMarginSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const margins = compact(rows.map((r) =>
-    r.revenue !== null && r.revenue !== 0 && r.grossProfit !== null
-      ? (r.grossProfit / r.revenue) * 100
-      : null,
-  ));
-  if (margins.length < 2) return { passed: null, value: null };
+const evalGrossMarginSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactRows = rows.filter((r) => r.revenue !== null && r.revenue !== 0 && r.grossProfit !== null);
+  const margins = compactRows.map((r) => (r.grossProfit! / r.revenue!) * 100);
+  if (margins.length < 2) return { passed: null, value: null, detail: '毛利率資料不足，無法評估' };
   const declined = hasDeclineBeyond(margins, 10);
-  return { passed: !declined, value: lastValue(margins) };
+  const worst = findWorstYoY(margins);
+  let detail: string;
+  if (declined && worst !== null) {
+    const worstYear = compactRows[worst.idx]?.year;
+    const worstMargin = margins[worst.idx];
+    detail = `${worstYear ?? '某年'} 毛利率跌至 ${worstMargin !== undefined ? pct(worstMargin) : '—'}（YoY ${pct(worst.yoy)}），超過 10pp 衰退門檻`;
+  } else {
+    const lastMargin = margins[margins.length - 1];
+    const minMargin = Math.min(...margins);
+    detail = `毛利率最低 ${pct(minMargin)}，最近年度 ${lastMargin !== undefined ? pct(lastMargin) : '—'}，均未衰退超過 10pp`;
+  }
+  return { passed: !declined, value: lastValue(margins), detail };
 };
 
-const evalOpIncomeSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const vals = compact(rows.map((r) => r.operatingIncome));
-  if (vals.length < 2) return { passed: null, value: null };
+const evalOpIncomeSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactRows = rows.filter((r) => r.operatingIncome !== null);
+  const vals = compactRows.map((r) => r.operatingIncome!);
+  if (vals.length < 2) return { passed: null, value: null, detail: '營業利益資料不足，無法評估' };
   const allPos = allPositive(vals.map((v) => v));
   const declined = hasDeclineBeyond(vals, 10);
-  return { passed: allPos && !declined, value: lastValue(vals) };
+  const passed = allPos && !declined;
+  let detail: string;
+  if (!allPos) {
+    const negIdx = vals.findIndex((v) => v <= 0);
+    const negYear = compactRows[negIdx]?.year;
+    const negVal = vals[negIdx];
+    detail = `${negYear ?? '某年'} 營業利益 ${negVal !== undefined ? fmtNTD(negVal) : '—'}，跌至負值`;
+  } else if (declined) {
+    const worst = findWorstYoY(vals);
+    if (worst !== null) {
+      const worstYear = compactRows[worst.idx]?.year;
+      detail = `${worstYear ?? '某年'} 營業利益 YoY ${pct(worst.yoy)}，超過 10% 衰退門檻`;
+    } else {
+      detail = '存在單年衰退超過 10% 門檻';
+    }
+  } else {
+    const lastOp = lastValue(vals);
+    detail = `最近年度營業利益 ${lastOp !== null ? fmtNTD(lastOp) : '—'}，5年均為正且未衰退超過 10%`;
+  }
+  return { passed, value: lastValue(vals), detail };
 };
 
-const evalEpsSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const vals = compact(rows.map((r) => r.eps));
-  if (vals.length < 2) return { passed: null, value: null };
+const evalEpsSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactRows = rows.filter((r) => r.eps !== null);
+  const vals = compactRows.map((r) => r.eps!);
+  if (vals.length < 2) return { passed: null, value: null, detail: 'EPS 資料不足，無法評估' };
   const allPos = allPositive(vals.map((v) => v));
   const declined = hasDeclineBeyond(vals, 10);
-  return { passed: allPos && !declined, value: lastValue(vals) };
+  const passed = allPos && !declined;
+  let detail: string;
+  if (!allPos) {
+    const negIdx = vals.findIndex((v) => v <= 0);
+    const negYear = compactRows[negIdx]?.year;
+    detail = `${negYear ?? '某年'} EPS ${vals[negIdx]?.toFixed(2) ?? '—'} 跌至負值`;
+  } else if (declined) {
+    const worst = findWorstYoY(vals);
+    if (worst !== null) {
+      const worstYear = compactRows[worst.idx]?.year;
+      const worstVal = vals[worst.idx];
+      const worstPrev = vals[worst.idx - 1];
+      detail = `${worstYear ?? '某年'} EPS 從 ${worstPrev?.toFixed(2) ?? '—'} → ${worstVal?.toFixed(2) ?? '—'}，YoY ${pct(worst.yoy)}，超過 10% 衰退門檻`;
+    } else {
+      detail = 'EPS 存在單年衰退超過 10% 門檻';
+    }
+  } else {
+    const minEps = Math.min(...vals);
+    const minYear = compactRows[vals.indexOf(minEps)]?.year;
+    const worst = findWorstYoY(vals);
+    detail = `5年最低 EPS ${minEps.toFixed(2)} (${minYear ?? '—'})；最大 YoY ${worst !== null ? pct(worst.yoy) : '—'}，在 10% 容忍內`;
+  }
+  return { passed, value: lastValue(vals), detail };
 };
 
-const evalRevenueCagr = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalRevenueCagr = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   const vals = compact(rows.map((r) => r.revenue));
   const c = cagr(vals);
-  if (c === null) return { passed: null, value: null };
-  return { passed: c > 0, value: c };
+  if (c === null) return { passed: null, value: null, detail: '營收資料不足，無法計算 CAGR' };
+  const detail = c > 0
+    ? `5年營收 CAGR ${pct(c)}，持續成長`
+    : `5年營收 CAGR ${pct(c)}，未能正成長`;
+  return { passed: c > 0, value: c, detail };
 };
 
-const evalOpIncomeGrowth = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const vals = compact(rows.map((r) => r.operatingIncome));
+const evalOpIncomeGrowth = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactRows = rows.filter((r) => r.operatingIncome !== null);
+  const vals = compactRows.map((r) => r.operatingIncome!);
   const c = cagr(vals);
-  if (c === null) return { passed: null, value: null };
+  if (c === null) return { passed: null, value: null, detail: '營業利益資料不足，無法計算 CAGR' };
   const declined = hasDeclineBeyond(vals, 10);
-  return { passed: c > 0 && !declined, value: c };
+  const passed = c > 0 && !declined;
+  let detail: string;
+  if (c <= 0) {
+    detail = `5年營業利益 CAGR ${pct(c)}，未能正成長`;
+  } else if (declined) {
+    const worst = findWorstYoY(vals);
+    if (worst !== null) {
+      const worstYear = compactRows[worst.idx]?.year;
+      detail = `CAGR ${pct(c)} 但 ${worstYear ?? '某年'} YoY ${pct(worst.yoy)} 衰退超過 10%`;
+    } else {
+      detail = `CAGR ${pct(c)} 但存在單年衰退超過 10%`;
+    }
+  } else {
+    detail = `5年營業利益 CAGR ${pct(c)}，無單年衰退超過 10%`;
+  }
+  return { passed, value: c, detail };
 };
 
-const evalEpsGrowth = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const vals = compact(rows.map((r) => r.eps));
+const evalEpsGrowth = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactRows = rows.filter((r) => r.eps !== null);
+  const vals = compactRows.map((r) => r.eps!);
   const c = cagr(vals);
-  if (c === null) return { passed: null, value: null };
+  if (c === null) return { passed: null, value: null, detail: 'EPS 資料不足，無法計算 CAGR' };
   const declined = hasDeclineBeyond(vals, 10);
-  return { passed: c > 0 && !declined, value: c };
+  const passed = c > 0 && !declined;
+  let detail: string;
+  if (c <= 0) {
+    detail = `5年 EPS CAGR ${pct(c)}，未能正成長`;
+  } else if (declined) {
+    const worst = findWorstYoY(vals);
+    if (worst !== null) {
+      const worstYear = compactRows[worst.idx]?.year;
+      detail = `CAGR ${pct(c)} 但 ${worstYear ?? '某年'} EPS YoY ${pct(worst.yoy)} 衰退超過 10%`;
+    } else {
+      detail = `CAGR ${pct(c)} 但存在單年衰退超過 10%`;
+    }
+  } else {
+    detail = `5年 EPS CAGR ${pct(c)}，無單年衰退超過 10%`;
+  }
+  return { passed, value: c, detail };
 };
 
-const evalCashFlowPositive = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
-  const ocfVals = compact(rows.map((r) => r.ocf));
-  const fcfVals = compact(rows.map((r) => r.fcf));
-  if (ocfVals.length < 2 || fcfVals.length < 2) return { passed: null, value: null };
+const evalCashFlowPositive = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  const compactOcfRows = rows.filter((r) => r.ocf !== null);
+  const compactFcfRows = rows.filter((r) => r.fcf !== null);
+  const ocfVals = compactOcfRows.map((r) => r.ocf!);
+  const fcfVals = compactFcfRows.map((r) => r.fcf!);
+  if (ocfVals.length < 2 || fcfVals.length < 2) return { passed: null, value: null, detail: 'OCF/FCF 資料不足，無法評估現金流' };
   const ocfAllPos = allPositive(ocfVals.map((v) => v));
   const fcfAllPos = allPositive(fcfVals.map((v) => v));
-  const ocfCagr = cagr(ocfVals);
-  const fcfCagr = cagr(fcfVals);
-  const ocfGrowing = ocfCagr !== null && ocfCagr > 0;
-  const fcfGrowing = fcfCagr !== null && fcfCagr > 0;
+  const ocfCagrVal = cagr(ocfVals);
+  const fcfCagrVal = cagr(fcfVals);
+  const ocfGrowing = ocfCagrVal !== null && ocfCagrVal > 0;
+  const fcfGrowing = fcfCagrVal !== null && fcfCagrVal > 0;
   const lastOcf = lastValue(ocfVals);
-  return { passed: ocfAllPos && fcfAllPos && ocfGrowing && fcfGrowing, value: lastOcf };
+  const passed = ocfAllPos && fcfAllPos && ocfGrowing && fcfGrowing;
+  let detail: string;
+  if (!ocfAllPos) {
+    const negIdx = ocfVals.findIndex((v) => v <= 0);
+    const negYear = compactOcfRows[negIdx]?.year;
+    const negVal = ocfVals[negIdx];
+    detail = `${negYear ?? '某年'} OCF ${negVal !== undefined ? fmtNTD(negVal) : '—'} 轉負`;
+  } else if (!fcfAllPos) {
+    const negIdx = fcfVals.findIndex((v) => v <= 0);
+    const negYear = compactFcfRows[negIdx]?.year;
+    const negVal = fcfVals[negIdx];
+    detail = `${negYear ?? '某年'} FCF ${negVal !== undefined ? fmtNTD(negVal) : '—'} 轉負`;
+  } else if (!ocfGrowing) {
+    detail = `OCF 5年 CAGR ${ocfCagrVal !== null ? pct(ocfCagrVal) : '—'}，未能正成長`;
+  } else if (!fcfGrowing) {
+    detail = `FCF 5年 CAGR ${fcfCagrVal !== null ? pct(fcfCagrVal) : '—'}，未能正成長`;
+  } else {
+    detail = `OCF 5年 CAGR ${ocfCagrVal !== null ? pct(ocfCagrVal) : '—'}，FCF ${fcfCagrVal !== null ? pct(fcfCagrVal) : '—'}，均為正且成長`;
+  }
+  return { passed, value: lastOcf, detail };
 };
 
-const evalOcfVsOtherCf = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalOcfVsOtherCf = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '現金流資料缺失，無法評估' };
   const { ocf, icf, fcfCf } = lastRow;
-  if (ocf === null || icf === null || fcfCf === null) return { passed: null, value: null };
+  if (ocf === null || icf === null || fcfCf === null) return { passed: null, value: null, detail: 'OCF/ICF/融資現金流資料缺失' };
   // OCF > |financing| + |investing|
   const outflows = Math.abs(icf) + Math.abs(fcfCf);
-  return { passed: ocf > outflows, value: ocf };
+  const passed = ocf > outflows;
+  const year = lastRow.year;
+  const detail = passed
+    ? `${year} OCF ${fmtNTD(ocf)} > |融資 ${fmtNTD(fcfCf)}| + |投資 ${fmtNTD(icf)}| = ${fmtNTD(outflows)}`
+    : `${year} OCF ${fmtNTD(ocf)} < 投融資合計 ${fmtNTD(outflows)}，自由現金流不足`;
+  return { passed, value: ocf, detail };
 };
 
-const evalEarningsQuality = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalEarningsQuality = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '資料缺失，無法評估收益質量' };
   const { ocf, netIncome } = lastRow;
-  if (ocf === null || netIncome === null || netIncome === 0) return { passed: null, value: null };
+  if (ocf === null || netIncome === null || netIncome === 0) return { passed: null, value: null, detail: 'OCF 或淨利資料缺失' };
   const ratio = ocf / netIncome;
-  return { passed: ratio > 0.8, value: ratio };
+  const year = lastRow.year;
+  const detail = ratio > 0.8
+    ? `${year} OCF/淨利比率 ${ratio.toFixed(2)}，賺到的錢大量轉成現金`
+    : `${year} OCF/淨利比率 ${ratio.toFixed(2)}，${((1 - ratio) * 100).toFixed(0)}% 淨利未轉成現金，疑似應收帳款積壓`;
+  return { passed: ratio > 0.8, value: ratio, detail };
 };
 
-const evalDebtToEquity = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalDebtToEquity = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '資產負債資料缺失' };
   const { totalDebt, totalEquity } = lastRow;
-  if (totalDebt === null || totalEquity === null || totalEquity === 0) return { passed: null, value: null };
+  if (totalDebt === null || totalEquity === null || totalEquity === 0) return { passed: null, value: null, detail: '負債或股東權益資料缺失' };
   const de = totalDebt / totalEquity;
-  return { passed: de < 0.5, value: de };
+  const year = lastRow.year;
+  const detail = de < 0.5
+    ? `${year} D/E = ${de.toFixed(2)}，財務結構穩健`
+    : `${year} D/E = ${de.toFixed(2)}，槓桿偏高`;
+  return { passed: de < 0.5, value: de, detail };
 };
 
-const evalCurrentRatio = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalCurrentRatio = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '流動資產/負債資料缺失' };
   const { currentAssets, currentLiabilities } = lastRow;
   if (currentAssets === null || currentLiabilities === null || currentLiabilities === 0)
-    return { passed: null, value: null };
+    return { passed: null, value: null, detail: '流動資產或流動負債資料缺失' };
   const ratio = (currentAssets / currentLiabilities) * 100;
-  return { passed: ratio > 100, value: ratio };
+  const year = lastRow.year;
+  const detail = ratio > 100
+    ? `${year} 流動比率 ${ratio.toFixed(0)}%（流動資產為流動負債 ${(ratio / 100).toFixed(1)} 倍），短期償債能力強`
+    : `${year} 流動比率 ${ratio.toFixed(0)}%，可能面臨短期償債壓力`;
+  return { passed: ratio > 100, value: ratio, detail };
 };
 
-const evalLtDebtToNetIncome = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalLtDebtToNetIncome = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   // Use total debt as proxy for long-term debt (often no separate LT debt field)
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '負債/淨利資料缺失' };
   const { totalDebt, netIncome } = lastRow;
-  if (totalDebt === null || netIncome === null || netIncome === 0) return { passed: null, value: null };
+  if (totalDebt === null || netIncome === null || netIncome === 0) return { passed: null, value: null, detail: '總負債或淨利資料缺失' };
   const ratio = totalDebt / netIncome;
-  return { passed: ratio < 4, value: ratio };
+  const year = lastRow.year;
+  const detail = ratio < 4
+    ? `${year} 長期負債 ${fmtNTD(totalDebt)} / 淨利 ${fmtNTD(netIncome)} = ${ratio.toFixed(1)}，${(ratio * 12).toFixed(0)} 個月淨利可清償`
+    : `${year} 長期負債 ${fmtNTD(totalDebt)} / 淨利 ${fmtNTD(netIncome)} = ${ratio.toFixed(1)}，超過 4 年淨利`;
+  return { passed: ratio < 4, value: ratio, detail };
 };
 
-const evalRoe = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalRoe = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   // Compute ROE for each year: netIncome / totalEquity × 100
-  const roeVals = compact(rows.map((r) => {
-    if (r.netIncome === null || r.totalEquity === null || r.totalEquity === 0) return null;
-    return (r.netIncome / r.totalEquity) * 100;
-  }));
-  if (roeVals.length === 0) return { passed: null, value: null };
+  const compactRows = rows.filter((r) => r.netIncome !== null && r.totalEquity !== null && r.totalEquity !== 0);
+  const roeVals = compactRows.map((r) => (r.netIncome! / r.totalEquity!) * 100);
+  if (roeVals.length === 0) return { passed: null, value: null, detail: 'ROE 計算所需資料缺失' };
   const allAbove15 = allAbove(roeVals.map((v) => v), 15);
-  return { passed: allAbove15, value: lastValue(roeVals) };
+  let detail: string;
+  if (allAbove15) {
+    const minRoe = Math.min(...roeVals);
+    const minYear = compactRows[roeVals.indexOf(minRoe)]?.year;
+    detail = `5年最低 ROE ${pct(minRoe)} (${minYear ?? '—'})，全期均 ≥ 15%`;
+  } else {
+    const failIdx = roeVals.findIndex((v) => v <= 15);
+    const failYear = compactRows[failIdx]?.year;
+    const failRoe = roeVals[failIdx];
+    detail = `${failYear ?? '某年'} ROE ${failRoe !== undefined ? pct(failRoe) : '—'}，低於 15% 門檻`;
+  }
+  return { passed: allAbove15, value: lastValue(roeVals), detail };
 };
 
-const evalAssetTurnover = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalAssetTurnover = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   // Asset Turnover = Revenue / Total Assets
   // Industry average comparison is out of scope for v1; fallback threshold = 0.5
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '資產/營收資料缺失' };
   const { revenue, totalAssets } = lastRow;
-  if (revenue === null || totalAssets === null || totalAssets === 0) return { passed: null, value: null };
+  if (revenue === null || totalAssets === null || totalAssets === 0) return { passed: null, value: null, detail: '總資產或營收資料缺失' };
   const at = revenue / totalAssets;
-  return { passed: at > 0.5, value: at };
+  const year = lastRow.year;
+  const detail = at > 0.5
+    ? `${year} 資產周轉率 ${at.toFixed(2)} > 0.5 基準`
+    : `${year} 資產周轉率 ${at.toFixed(2)}，低於通用基準 0.5；註：未做產業同儕比較`;
+  return { passed: at > 0.5, value: at, detail };
 };
 
-const evalRoicVsWacc = (rows: AnnualFinancialRow[], wacc: number): Pick<PeaceCriterion, 'passed' | 'value'> => {
+const evalRoicVsWacc = (rows: AnnualFinancialRow[], wacc: number): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
   const lastRow = rows[rows.length - 1];
-  if (lastRow === undefined) return { passed: null, value: null };
+  if (lastRow === undefined) return { passed: null, value: null, detail: '資料缺失，無法計算 ROIC' };
   const { operatingIncome, incomeTaxExpense, pretaxIncome, totalEquity, totalDebt } = lastRow;
-  if (operatingIncome === null) return { passed: null, value: null };
+  if (operatingIncome === null) return { passed: null, value: null, detail: '營業利益資料缺失，無法計算 ROIC' };
 
   // Effective tax rate = income tax expense / pre-tax income; fallback 20%
   let taxRate = 0.20;
@@ -214,10 +394,15 @@ const evalRoicVsWacc = (rows: AnnualFinancialRow[], wacc: number): Pick<PeaceCri
   const nopat = operatingIncome * (1 - taxRate);
   const investedCapital =
     (totalEquity ?? 0) + (totalDebt ?? 0);
-  if (investedCapital === 0) return { passed: null, value: null };
+  if (investedCapital === 0) return { passed: null, value: null, detail: '投入資本為 0，無法計算 ROIC' };
 
   const roic = (nopat / investedCapital) * 100;
-  return { passed: roic > wacc, value: roic };
+  const year = lastRow.year;
+  const spread = roic - wacc;
+  const detail = roic > wacc
+    ? `${year} ROIC ${pct(roic)} > WACC ${pct(wacc)}，創造 ${pct(spread)} 超額報酬`
+    : `${year} ROIC ${pct(roic)} < WACC ${pct(wacc)}，未創造價值`;
+  return { passed: roic > wacc, value: roic, detail };
 };
 
 // ─── main export ─────────────────────────────────────────────────────────────

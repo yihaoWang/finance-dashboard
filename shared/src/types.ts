@@ -184,6 +184,7 @@ export interface PeaceCriterion {
   passed: boolean | null;
   value: number | null;
   threshold: string;
+  detail: string;  // 人話一句解釋
   note?: string;
 }
 

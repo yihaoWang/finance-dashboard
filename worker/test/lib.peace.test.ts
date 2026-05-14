@@ -37,6 +37,24 @@ describe('computePeace - healthy stock', () => {
     expect(bundle.criteria).toHaveLength(16);
   });
 
+  it('all criteria have a non-empty detail string', () => {
+    const data = makeFiveYears();
+    const bundle = computePeace(data, 9.5, [], []);
+    for (const c of bundle.criteria) {
+      expect(typeof c.detail).toBe('string');
+      expect(c.detail.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('null-data criteria also have a non-empty detail string', () => {
+    const emptyData: FiveYearFinancials = { symbol: '0000', rows: [], fetchedAt: Date.now() };
+    const bundle = computePeace(emptyData, 9.5, [], []);
+    for (const c of bundle.criteria) {
+      expect(typeof c.detail).toBe('string');
+      expect(c.detail.length).toBeGreaterThan(0);
+    }
+  });
+
   it('score and total are correct', () => {
     const data = makeFiveYears();
     const bundle = computePeace(data, 9.5, [], []);
