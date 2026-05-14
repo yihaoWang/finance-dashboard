@@ -85,7 +85,6 @@ export const MacroPanel = () => {
     fredCard('非農就業月增', fred?.nfpChange, '千', 0),
     fredCard('失業率', fred?.unrate, '%', 1),
     fredCard('GDP年增率', fred?.gdpYoy, '%', 1),
-    fredCard('製造業PMI', fred?.pmi, '', 1),
     fredCard('CPI年增率', fred?.cpi, '%', 2),
     fredCard('PCE年增率', fred?.pce, '%', 2),
     fredCard('PPI年增率', fred?.ppi, '%', 2),
