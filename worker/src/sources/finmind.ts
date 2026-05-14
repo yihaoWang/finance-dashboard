@@ -408,12 +408,10 @@ export const fetchFiveYearFinancials = async (
   // Cash flow fields to sum quarterly → annual
   const cfFields = [
     'CashFlowsFromOperatingActivities',
-    'CashFlowsFromInvestingActivities',
-    'CashFlowsFromFinancingActivities',
-    // CapEx: acquisition of property/plant/equipment (negative in standard presentation)
-    'AcquisitionOfPropertyPlantAndEquipment',
-    'PaymentsForPropertyPlantAndEquipment',
-    'PurchaseOfPropertyPlantAndEquipment',
+    'CashProvidedByInvestingActivities',
+    'CashFlowsProvidedFromFinancingActivities',
+    // CapEx: FinMind 用 PropertyAndPlantAndEquipment (negative in cash flow statement)
+    'PropertyAndPlantAndEquipment',
   ];
 
   // Balance sheet fields to take last-of-year snapshot
@@ -458,14 +456,11 @@ export const fetchFiveYearFinancials = async (
     const eps = num(inc['EPS']);
 
     const ocf = num(cf['CashFlowsFromOperatingActivities']);
-    const icf = num(cf['CashFlowsFromInvestingActivities']);
-    const fcfCf = num(cf['CashFlowsFromFinancingActivities']);
+    const icf = num(cf['CashProvidedByInvestingActivities']);
+    const fcfCf = num(cf['CashFlowsProvidedFromFinancingActivities']);
 
-    // CapEx = outflow for PP&E (try multiple field names; value may already be negative)
-    const capexRaw =
-      cf['AcquisitionOfPropertyPlantAndEquipment'] ??
-      cf['PaymentsForPropertyPlantAndEquipment'] ??
-      cf['PurchaseOfPropertyPlantAndEquipment'];
+    // CapEx: FinMind 用 PropertyAndPlantAndEquipment（負值）
+    const capexRaw = cf['PropertyAndPlantAndEquipment'];
     // Make CapEx a positive number representing the cash outflow
     const capex = capexRaw !== undefined ? Math.abs(capexRaw) : null;
 
