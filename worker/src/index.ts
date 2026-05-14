@@ -10,6 +10,7 @@ import { financials } from './routes/financials';
 import { events } from './routes/events';
 import { insights } from './routes/insights';
 import { sentiment } from './routes/sentiment';
+import { peace } from './routes/peace';
 import { scheduled } from './cron';
 import { insertDailyValue } from './cache/d1-sentiment';
 import { runSentimentDaily } from './cron';
@@ -50,6 +51,7 @@ app.route('/api/financials', financials);
 app.route('/api/events', events);
 app.route('/api/insights', insights);
 app.route('/api/sentiment', sentiment);
+app.route('/api/peace', peace);
 
 app.post('/api/admin/sentiment-backfill', async (c) => {
   const auth = c.req.header('authorization');

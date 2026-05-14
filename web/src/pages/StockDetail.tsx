@@ -1,6 +1,7 @@
 import { useStock } from '../hooks/useStock';
 import { Hero } from '../components/Hero';
 import { KpiGrid } from '../components/KpiGrid';
+import { PeacePanel } from '../components/PeacePanel';
 import { PriceChart } from '../components/PriceChart';
 import { AnalysisPanels } from '../components/AnalysisPanels';
 import { NewsPanel } from '../components/NewsPanel';
@@ -22,6 +23,7 @@ export const StockDetail = ({ symbol }: Props) => {
         <Hero quote={quote} kpi={kpi} />
         <KpiGrid kpi={kpi} />
       </div>
+      <PeacePanel symbol={symbol} />
       <div className="mb-6">
         <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
       </div>

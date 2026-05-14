@@ -1,4 +1,4 @@
-import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PricePoint, SentimentBundle, StockBundle } from '@fd/shared';
+import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PeaceBundle, PricePoint, SentimentBundle, StockBundle } from '@fd/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -47,6 +47,25 @@ export const fetchSentiment = async (): Promise<ApiResponse<SentimentBundle>> =>
   const res = await fetch(`${API_BASE}/api/sentiment`);
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<SentimentBundle>>;
+};
+
+export const fetchPeace = async (symbol: string): Promise<ApiResponse<PeaceBundle>> => {
+  const res = await fetch(`${API_BASE}/api/peace?symbol=${encodeURIComponent(symbol)}`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<PeaceBundle>>;
+};
+
+export const postPeaceTags = async (
+  symbol: string,
+  kind: 'moat' | 'risk',
+  values: string[],
+): Promise<void> => {
+  const res = await fetch(`${API_BASE}/api/peace/tags`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol, kind, values }),
+  });
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
 };
 
 export const fetchDigestHistory = async (scope: 'market' | 'stock', symbol?: string, limit = 30): Promise<ApiResponse<DigestHistoryItem[]>> => {

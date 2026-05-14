@@ -173,6 +173,59 @@ export type FinancialsBundle = {
   fetchedAt: number;
 };
 
+export type MoatCategory = '無形資產' | '成本優勢' | '網路效應' | '高轉換成本' | '有效規模';
+export type RiskCategory = 'R 監管風險' | 'I 通脹風險' | 'S 科技風險' | 'K 關鍵人物風險';
+
+export interface PeaceCriterion {
+  id: number;
+  group: 'P' | 'E' | 'A' | 'C' | 'E2';  // E2 = 效率 (second E group in code)
+  label: string;
+  priority: boolean;
+  passed: boolean | null;
+  value: number | null;
+  threshold: string;
+  note?: string;
+}
+
+export interface PeaceBundle {
+  symbol: string;
+  score: number;          // 0-16 passed
+  total: number;          // 16
+  priorityScore: number;  // 0-6 passed among priority items
+  criteria: PeaceCriterion[];
+  moat: MoatCategory[];
+  risk: RiskCategory[];
+  wacc: number;           // computed WACC used for #16
+  computedAt: string;
+}
+
+export interface AnnualFinancialRow {
+  year: number;
+  revenue: number | null;
+  grossProfit: number | null;
+  operatingIncome: number | null;
+  netIncome: number | null;
+  eps: number | null;
+  ocf: number | null;
+  icf: number | null;
+  fcf: number | null;
+  fcfCf: number | null;  // financing cash flow
+  totalAssets: number | null;
+  totalEquity: number | null;
+  totalDebt: number | null;     // short + long term
+  currentAssets: number | null;
+  currentLiabilities: number | null;
+  incomeTaxExpense: number | null;
+  pretaxIncome: number | null;
+  capex: number | null;
+}
+
+export interface FiveYearFinancials {
+  symbol: string;
+  rows: AnnualFinancialRow[];  // sorted oldest-first, length 1–5
+  fetchedAt: number;
+}
+
 export type IndicatorKey =
   | 'breadth_adr'
   | 'foreign_futures_oi'
