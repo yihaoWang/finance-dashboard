@@ -268,3 +268,33 @@ export interface SentimentBundle {
   indicators: SentimentIndicator[];
   updatedAt: string;
 }
+
+export interface ValuationBundle {
+  marketPe: number | null;
+  marketLabel: 'TAIEX' | 'TPEX' | null;
+  pe5yAvg: number | null;
+  pe5yLow: number | null;
+  pe15yLow: number | null;
+  currentPe: number | null;
+  forwardPe: number | null;
+  peg: number | null;
+  trailingEps: number | null;
+  forwardEps: number | null;
+  industryPe: number | null;
+  computedAt: number;
+}
+
+export interface ScreenerRow {
+  symbol: string;
+  score: number;
+  total: number;
+  priorityScore: number;
+  priorityTotal: number;
+  updatedAt: number;
+}
+
+export interface ScreenerBundle {
+  rows: ScreenerRow[];
+  recommended: ScreenerRow[];
+  updatedAt: number;
+}

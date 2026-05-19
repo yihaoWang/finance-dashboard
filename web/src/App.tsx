@@ -4,6 +4,7 @@ import { MarketOverviewPage } from './pages/MarketOverviewPage';
 import { StockDetailPage } from './pages/StockDetailPage';
 import { FinancialsPage } from './pages/FinancialsPage';
 import { DigestHistory } from './pages/DigestHistory';
+import { ScreenerPage } from './pages/ScreenerPage';
 
 const STORAGE_KEY = 'fd:watchlist';
 const DEFAULT_WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
@@ -42,6 +43,10 @@ export const App = () => {
       <Route
         path="/financials"
         element={<FinancialsPage watchlist={watchlist} setWatchlist={setWatchlist} />}
+      />
+      <Route
+        path="/screener"
+        element={<ScreenerPage watchlist={watchlist} setWatchlist={setWatchlist} />}
       />
     </Routes>
   );

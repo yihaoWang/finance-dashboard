@@ -1,6 +1,6 @@
 import { useStock } from '../hooks/useStock';
+import { useValuation } from '../hooks/useValuation';
 import { Hero } from '../components/Hero';
-import { KpiGrid } from '../components/KpiGrid';
 import { PeacePanel } from '../components/PeacePanel';
 import { PriceChart } from '../components/PriceChart';
 import { AnalysisPanels } from '../components/AnalysisPanels';
@@ -10,6 +10,7 @@ type Props = { symbol: string };
 
 export const StockDetail = ({ symbol }: Props) => {
   const { data, isLoading, error } = useStock(symbol);
+  const { data: valuationData } = useValuation(symbol);
 
   if (isLoading) return <div className="text-zinc-500 p-6">載入中…</div>;
   if (error) return <div className="text-down p-6">錯誤：{(error as Error).message}</div>;
@@ -20,8 +21,7 @@ export const StockDetail = ({ symbol }: Props) => {
   return (
     <>
       <div id="overview" className="scroll-mt-24">
-        <Hero quote={quote} kpi={kpi} />
-        <KpiGrid kpi={kpi} />
+        <Hero quote={quote} kpi={kpi} valuation={valuationData?.data ?? null} />
       </div>
       <PeacePanel symbol={symbol} />
       <div className="mb-6">

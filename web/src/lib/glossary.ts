@@ -18,6 +18,11 @@ export const GLOSSARY: Record<string, Term> = {
       return `${fmt(v)} 中性區間`;
     },
   },
+  marketPe: {
+    name: '市場 P/E（大盤）',
+    definition: '台股大盤本益比中位數（上市 TAIEX、上櫃 TPEX），對標個股 P/E 高低的市場基準。資料來自 TWSE / TPEX 每日 OpenAPI 全市場本益比中位數，比平均更耐極端值。',
+    interpret: (v) => (v === null ? '尚無資料' : `${fmt(v)}（市場中位數）`),
+  },
   forwardPe: {
     name: 'Forward P/E（預估本益比）',
     definition: '股價 ÷ 未來一年預估 EPS。比 TTM 更前瞻，但仰賴分析師估值準確度。',

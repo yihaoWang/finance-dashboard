@@ -7,7 +7,48 @@ import { fetchBreadthADR } from './sources/twse-breadth';
 import { fetchMarginBalanceDaily, fetchMarginMaintenanceDaily, fetchShortLongRatioDaily } from './sources/twse-margin';
 import { fetchInstitutional5dDaily } from './sources/twse-chips';
 import { insertDailyValue } from './cache/d1-sentiment';
+import { fetchFiveYearFinancials } from './sources/finmind';
+import { fetchFredSnapshot } from './sources/fred';
+import { computePeace } from './lib/peace';
+import { getTags } from './cache/d1-tags';
+import { upsertScreenerScore } from './cache/d1-screener';
+import { SCREENER_UNIVERSE } from './lib/screener-universe';
 import type { IndicatorKey } from '@fd/shared';
+
+const WACC_FALLBACK = 9.5;
+const WACC_PREMIUM = 5.0;
+
+export const runScreenerScan = async (env: Env): Promise<void> => {
+  let wacc = WACC_FALLBACK;
+  try {
+    const fred = await fetchFredSnapshot(env);
+    if (fred.dgs10?.latest !== undefined) wacc = fred.dgs10.latest + WACC_PREMIUM;
+  } catch (err) {
+    console.warn('[screener] FRED failed, using fallback WACC', err);
+  }
+
+  const now = Date.now();
+  for (const symbol of SCREENER_UNIVERSE) {
+    try {
+      const [financials, tags] = await Promise.all([
+        fetchFiveYearFinancials(env.KV, symbol),
+        getTags(env.DB, symbol),
+      ]);
+      const bundle = computePeace(financials, wacc, tags.moat, tags.risk);
+      const priorityTotal = bundle.criteria.filter((c) => c.priority).length;
+      await upsertScreenerScore(env.DB, {
+        symbol,
+        score: bundle.score,
+        total: bundle.total,
+        priorityScore: bundle.priorityScore,
+        priorityTotal,
+        updatedAt: now,
+      });
+    } catch (err) {
+      console.error('[screener] scan failed for', symbol, err);
+    }
+  }
+};
 
 const WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
 
@@ -81,6 +122,12 @@ export const scheduled: ExportedHandlerScheduledHandler<Env> = async (_event, en
         } catch (err) {
           console.error('digest pipeline failed for symbol', symbol, err);
         }
+      }
+
+      try {
+        await runScreenerScan(env);
+      } catch (err) {
+        console.error('screener scan failed', err);
       }
     })(),
   );

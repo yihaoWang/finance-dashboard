@@ -1,6 +1,6 @@
-import type { Quote, Kpi } from '@fd/shared';
+import type { Quote, Kpi, ValuationBundle } from '@fd/shared';
 
-type Props = { quote: Quote; kpi: Kpi };
+type Props = { quote: Quote; kpi: Kpi; valuation?: ValuationBundle | null };
 
 const TZ = 'Asia/Taipei';
 
@@ -63,7 +63,7 @@ const buildLeds = (quote: Quote, kpi: Kpi): Led[] => {
   return leds;
 };
 
-export const Hero = ({ quote, kpi }: Props) => {
+export const Hero = ({ quote, kpi, valuation }: Props) => {
   const isUp = quote.change >= 0;
   const leds = buildLeds(quote, kpi);
   return (
@@ -107,6 +107,14 @@ export const Hero = ({ quote, kpi }: Props) => {
               {quote.high52w?.toFixed(0) ?? '—'} / {quote.low52w?.toFixed(0) ?? '—'}
             </div>
           </div>
+          {valuation?.marketPe != null && (
+            <div>
+              <div className="text-zinc-500 text-xs mb-1">
+                {valuation.marketLabel ?? 'TAIEX'} P/E
+              </div>
+              <div className="num text-zinc-200">{valuation.marketPe.toFixed(2)}</div>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ink-700">

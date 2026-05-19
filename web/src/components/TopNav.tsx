@@ -5,6 +5,7 @@ const NAV_LINKS: { path: string; label: string }[] = [
   { path: '/', label: '📊 總體市場' },
   { path: '/stock', label: '📈 個股分析' },
   { path: '/financials', label: '📑 財報' },
+  { path: '/screener', label: '🎯 選股' },
 ];
 
 type Props = {

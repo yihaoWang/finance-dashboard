@@ -320,23 +320,27 @@ const fetchCashFlowStatement = async (
 // Sum quarterly records by fiscal year (year = the calendar year of the quarter-end date).
 // For annual-filed data the record date is already year-end (e.g. 2023-12-31), so this
 // also handles the case where the API returns annual rows (one per year).
+// Also tracks the latest quarter-end month per year so we can drop incomplete years.
 const sumByYear = (
   byDate: Record<string, Record<string, number>>,
   fields: string[],
-): Record<number, Record<string, number>> => {
-  const result: Record<number, Record<string, number>> = {};
+): { sums: Record<number, Record<string, number>>; latestMonth: Record<number, number> } => {
+  const sums: Record<number, Record<string, number>> = {};
+  const latestMonth: Record<number, number> = {};
   for (const [dateStr, vals] of Object.entries(byDate)) {
     const year = parseInt(dateStr.slice(0, 4), 10);
-    const bucket: Record<string, number> = result[year] ?? {};
+    const month = parseInt(dateStr.slice(5, 7), 10);
+    const bucket: Record<string, number> = sums[year] ?? {};
     for (const field of fields) {
       const v = vals[field];
       if (v !== undefined) {
         bucket[field] = (bucket[field] ?? 0) + v;
       }
     }
-    result[year] = bucket;
+    sums[year] = bucket;
+    if (month > (latestMonth[year] ?? 0)) latestMonth[year] = month;
   }
-  return result;
+  return { sums, latestMonth };
 };
 
 // For balance sheet items, take the last date's values for each year.
@@ -429,8 +433,11 @@ export const fetchFiveYearFinancials = async (
     'BondsPayable',
   ];
 
-  const incomeByYear = sumByYear(incomeByDate, incomeFields);
-  const cfByYear = sumByYear(cashFlowByDate, cfFields);
+  const incomeAgg = sumByYear(incomeByDate, incomeFields);
+  const incomeByYear = incomeAgg.sums;
+  const incomeLatestMonth = incomeAgg.latestMonth;
+  const cfAgg = sumByYear(cashFlowByDate, cfFields);
+  const cfByYear = cfAgg.sums;
   const bsByYear = lastByYear(balanceByDate, bsFields);
 
   // Collect the 5 most recent years with at least some income data
@@ -440,8 +447,12 @@ export const fetchFiveYearFinancials = async (
     ...Object.keys(bsByYear),
   ])].map(Number).sort((a, b) => a - b);
 
-  // Filter to years that have income data, last 5
-  const yearsWithData = allYears.filter((y) => incomeByYear[y] !== undefined).slice(-5);
+  // Drop incomplete fiscal years — require the latest quarter-end month >= 12 (i.e. Q4 reported).
+  // This prevents an in-progress calendar year (e.g. only Q1 reported by May) being compared
+  // against full prior years as if it were complete.
+  const yearsWithData = allYears
+    .filter((y) => incomeByYear[y] !== undefined && (incomeLatestMonth[y] ?? 0) >= 12)
+    .slice(-5);
 
   const rows: AnnualFinancialRow[] = yearsWithData.map((year): AnnualFinancialRow => {
     const inc = incomeByYear[year] ?? {};

@@ -1,4 +1,4 @@
-import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PeaceBundle, PricePoint, SentimentBundle, StockBundle } from '@fd/shared';
+import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PeaceBundle, PricePoint, ScreenerBundle, SentimentBundle, StockBundle, ValuationBundle } from '@fd/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -74,4 +74,16 @@ export const fetchDigestHistory = async (scope: 'market' | 'stock', symbol?: str
   const res = await fetch(`${API_BASE}/api/digest/history?${params}`);
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<DigestHistoryItem[]>>;
+};
+
+export const fetchScreener = async (): Promise<ApiResponse<ScreenerBundle>> => {
+  const res = await fetch(`${API_BASE}/api/screener`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<ScreenerBundle>>;
+};
+
+export const fetchValuation = async (symbol: string): Promise<ApiResponse<ValuationBundle>> => {
+  const res = await fetch(`${API_BASE}/api/valuation/${encodeURIComponent(symbol)}`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<ValuationBundle>>;
 };
