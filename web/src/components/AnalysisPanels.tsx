@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { Chips, Kpi, Quote } from '@fd/shared';
 import { MetricLabel } from './MetricLabel';
 import { SectionCard } from './SectionCard';
@@ -216,51 +215,27 @@ const Technicals = ({ kpi, quote }: { kpi: Kpi; quote: Quote }) => (
   </div>
 );
 
-type Tab = 'fundamentals' | 'chips' | 'technicals';
-
-const TABS: Array<{ key: Tab; label: string }> = [
-  { key: 'fundamentals', label: '基本面' },
-  { key: 'chips', label: '籌碼面' },
-  { key: 'technicals', label: '技術面' },
-];
+const SubCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
+    <div className="text-sm font-semibold text-slate-800 mb-3">{title}</div>
+    {children}
+  </div>
+);
 
 type Props = { kpi: Kpi; quote: Quote; chips: Chips };
 
-export const AnalysisPanels = ({ kpi, quote, chips }: Props) => {
-  const [tab, setTab] = useState<Tab>('fundamentals');
-
-  return (
-    <SectionCard
-      id="analysis"
-      storageKey="analysis"
-      title="個股分析"
-      actions={
-        <div role="tablist" className="flex items-center gap-1 rounded-md bg-slate-100 p-0.5">
-          {TABS.map((t) => {
-            const active = t.key === tab;
-            return (
-              <button
-                key={t.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(t.key)}
-                className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                  active
-                    ? 'bg-white text-slate-900 shadow-sm font-semibold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-      }
-    >
-      {tab === 'fundamentals' && <Fundamentals kpi={kpi} />}
-      {tab === 'chips' && <ChipsView chips={chips} />}
-      {tab === 'technicals' && <Technicals kpi={kpi} quote={quote} />}
-    </SectionCard>
-  );
-};
+export const AnalysisPanels = ({ kpi, quote, chips }: Props) => (
+  <SectionCard id="analysis" storageKey="analysis" title="個股分析">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <SubCard title="基本面">
+        <Fundamentals kpi={kpi} />
+      </SubCard>
+      <SubCard title="籌碼面">
+        <ChipsView chips={chips} />
+      </SubCard>
+      <SubCard title="技術面">
+        <Technicals kpi={kpi} quote={quote} />
+      </SubCard>
+    </div>
+  </SectionCard>
+);

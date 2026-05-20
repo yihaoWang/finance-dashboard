@@ -1,6 +1,95 @@
+import type { ReactNode } from 'react';
 import type { ValuationGauge, ValuationVerdict } from '@fd/shared';
 import { useValuationGauge } from '../hooks/useValuationGauge';
 import { SectionCard } from './SectionCard';
+import { InfoTooltip } from './InfoTooltip';
+
+const METHODOLOGY = (
+  <div className="space-y-2">
+    <div className="font-semibold text-slate-900">如何計算？</div>
+    <div>
+      四個獨立估值方法各算一個合理價區間，依「可信度」加權聚合成綜合區間，把現價對照到區間落點判斷
+      <span className="font-mono">便宜 / 合理偏低 / 合理偏高 / 昂貴</span>。
+    </div>
+    <div className="space-y-1 pt-1">
+      <div>
+        <span className="font-semibold">ROE 法</span>：BPS × (1+ROE)<sup>5~10</sup>，ROE 取近 5 年 p25~p75。
+      </div>
+      <div>
+        <span className="font-semibold">EPS 法</span>：EPS × PE 區間（優先用自身 5 年 p25~p75，否則同業 ±20%）。
+      </div>
+      <div>
+        <span className="font-semibold">股利法</span>：現金股利 ÷ 殖利率區間（市場常見 3~6%）。
+      </div>
+      <div>
+        <span className="font-semibold">淨值法</span>：BPS × PB 區間。
+      </div>
+    </div>
+    <div className="pt-1 text-slate-500">
+      可信度由各方法資料的穩定性 + 分歧度推算。綜合可信度 &lt;60% 表示各方法看法不一致，需審慎參考。
+    </div>
+  </div>
+);
+
+const METHOD_HELP: Record<string, ReactNode> = {
+  ROE: (
+    <div className="space-y-2">
+      <div className="font-semibold">ROE 法（複利成長）</div>
+      <div>
+        <span className="font-mono">合理價 = BPS × (1 + ROE)<sup>N</sup></span>
+      </div>
+      <div>
+        BPS 從最新財報的股東權益 / 流通股數推得；ROE 取近 5 年的第 25 至 75 百分位作為合理區間；N 取 5（保守）到 10（樂觀）年。
+      </div>
+      <div className="text-slate-500">
+        可信度＝ 1 − ROE 的變異係數（CV）。ROE 越穩定可信度越高，適合用在獲利穩定的成熟公司。
+      </div>
+    </div>
+  ),
+  EPS: (
+    <div className="space-y-2">
+      <div className="font-semibold">EPS 法（本益比）</div>
+      <div>
+        <span className="font-mono">合理價 = TTM EPS × PE 區間</span>
+      </div>
+      <div>
+        近四季 EPS 加總，乘上「自身過去 5 年 PE 的 p25~p75」；若樣本不足則回退到「同業平均 PE ±20%」。
+      </div>
+      <div className="text-slate-500">
+        可信度＝ EPS 年增率穩定度 × 0.7 + 同業樣本數 × 0.3。EPS 波動大或同業樣本少時可信度會降低。
+      </div>
+    </div>
+  ),
+  股利: (
+    <div className="space-y-2">
+      <div className="font-semibold">股利法（殖利率還原）</div>
+      <div>
+        <span className="font-mono">合理價 = 現金股利 ÷ 殖利率區間</span>
+      </div>
+      <div>
+        以市場常見殖利率 3%~6% 作為合理區間反推合理價。意義：「以領股利的角度看，你願意付多少錢？」
+      </div>
+      <div className="text-slate-500">
+        對成長股不適用：殖利率低於 2% 時這個方法會說「昂貴」，是 feature 不是 bug，
+        綜合評估會自動降低它的權重。
+      </div>
+    </div>
+  ),
+  淨值: (
+    <div className="space-y-2">
+      <div className="font-semibold">淨值法（PB 比）</div>
+      <div>
+        <span className="font-mono">合理價 = BPS × PB 區間</span>
+      </div>
+      <div>
+        當前 PB 上下 30% 作為合理區間。適合用在資產密集、淨值與股價連動高的產業（金融、營建）。
+      </div>
+      <div className="text-slate-500">
+        可信度＝ BPS 成長穩定度。對成長股（PB 遠高於同業歷史均值）參考價值較低。
+      </div>
+    </div>
+  ),
+};
 
 const VERDICT_COLOR: Record<ValuationVerdict, string> = {
   便宜: 'text-cyan-600 bg-cyan-50 border-cyan-300',
@@ -193,7 +282,12 @@ export const ValuationGaugePanel = ({ symbol }: { symbol: string }) => {
   return (
     <SectionCard
       id="valuation-gauge"
-      title="估值評價"
+      title={
+        <span className="inline-flex items-center gap-2">
+          估值評價
+          <InfoTooltip width={360}>{METHODOLOGY}</InfoTooltip>
+        </span>
+      }
       subtitle="四種估值方法的綜合判讀"
       storageKey={`valuation-gauge:${symbol}`}
     >
@@ -264,6 +358,7 @@ const MethodTable = ({ gauge }: { gauge: ValuationGauge }) => {
     },
     ...gauge.methods.map((m) => ({
       label: `${m.method}法`,
+      methodKey: m.method,
       low: m.low,
       high: m.high,
       verdict: m.verdict,
@@ -288,7 +383,12 @@ const MethodTable = ({ gauge }: { gauge: ValuationGauge }) => {
           {rows.map((r) => (
             <tr key={r.label} className={`border-b border-slate-100 ${r.bold ? 'bg-slate-50' : ''}`}>
               <td className={`py-2 ${r.bold ? 'font-semibold text-slate-900' : 'text-slate-700'}`}>
-                <div>{r.label}</div>
+                <div className="inline-flex items-center gap-1.5">
+                  <span>{r.label}</span>
+                  {'methodKey' in r && METHOD_HELP[r.methodKey] && (
+                    <InfoTooltip>{METHOD_HELP[r.methodKey]}</InfoTooltip>
+                  )}
+                </div>
                 {r.note && <div className="text-[11px] text-slate-500 mt-0.5">{r.note}</div>}
               </td>
               <td className="py-2 font-mono text-slate-700">
