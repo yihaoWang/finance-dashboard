@@ -19,21 +19,27 @@
 - **技術面**：RSI(14) / MACD / 支撐壓力 / 月線乖離
 - **消息面**：Yahoo TW 中文新聞 + 利多/利空/中性 keyword 分類，可點原文
 - **AI 每日解讀**：每天 08:00 自動產出 3 段（硬數據 / 框架解讀 / 情緒），含歷史頁
+- **PEACE 決策面板**：P/E/A/C/E 五大評分 + 護城河 / 風險 tag，給「買入 / 觀望 / 不碰」判斷
+- **估值否決**（[shared/src/valuation-gate.ts](shared/src/valuation-gate.ts)）：PEACE 優異但 PE 過貴自動降級。同業比較優先序：產業 PE 中位數 → 自身 5Y 均 → PEG。閾值 1.5×（觀望）/ 2.0×（不碰）。
+- **選股**：全 TW universe（~1075 檔）每日重算 weighted score + style tags（value / growth / dividend / hiddenChampion），估值否決同步生效。
 - **名詞 ⓘ Tooltip**：30+ 指標 hover 顯示定義 + 當前數值智慧解讀
 - **自選股**：localStorage 持久化，TopNav 自動跳節
+- **登入**：Cloudflare Access + Google OAuth，email allowlist；右上角登出按鈕走 `/cdn-cgi/access/logout`
 - **完整測試**：worker 125 unit + web 27 E2E，全綠
 
 ## 架構
 
 ```
-                  ┌───────────────────────┐
-                  │ Cloudflare Pages      │
-                  │ React + Vite + Tailwind│
-                  │ + TanStack Query       │
-                  └────────────┬───────────┘
-                               │ /api/*
+              Browser → Cloudflare Access (Google OAuth + email allowlist)
+                               │
+                  ┌────────────▼──────────────┐
+                  │ Cloudflare Pages          │
+                  │ React + Vite + Tailwind   │
+                  │ + Pages Function /api/*   │  ←─ adds service token, proxies to worker
+                  └────────────┬──────────────┘
+                               │ same-origin /api/*
                   ┌────────────▼───────────┐
-                  │ Cloudflare Workers     │
+                  │ Cloudflare Workers     │  ←─ also gated by CF Access (bypassed by service token)
                   │ Hono + TypeScript       │
                   │ + Workers AI binding    │
                   └─┬─────────┬──────────┬──┘
@@ -46,6 +52,8 @@
                 │              │              │
             TWSE OpenAPI   Yahoo (v8/RSS)    FRED + FinMind
 ```
+
+CF Access 同時保護 Pages 與 Worker 兩個 hostname。瀏覽器只連 Pages 同源 `/api/*`，由 [Pages Function](web/functions/api/[[path]].ts) 用 service token 轉發到 Worker，避免跨網域 cookie 問題。
 
 LLM 兩條路：
 
@@ -96,6 +104,36 @@ pnpm --filter web build
 cd worker
 pnpm exec wrangler pages deploy ../web/dist --project-name=finance-dashboard --branch=main
 ```
+
+## 登入機制（Cloudflare Access + Google）
+
+兩個 hostname 各掛一個 Access self-hosted application：
+
+- `finance-dashboard-6bb.pages.dev`（前端）
+- `finance-dashboard-worker.nihongo.workers.dev`（API）
+
+IdP：Google（OAuth client 自行在 Google Cloud Console 申請），policy：email allowlist。
+
+**Pages Function 代理**：browser 跨網域連 worker 會被 Access 擋（cookie 不跨域、XHR 跟不了 SSO redirect）。解法是 [web/functions/api/[[path]].ts](web/functions/api/[[path]].ts) 同源接 `/api/*`，server-side 用 service token 轉發到 worker（worker Access policy 加一條 Service Auth 放行）。前端 `.env.production` 的 `VITE_API_BASE` 留空即可。
+
+Pages Secrets：`CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` / `WORKER_ORIGIN`。
+
+**新增使用者**：CF Zero Trust → Access → Applications → 兩個 app 各自編輯 Policy → Include emails 加新 email；非白名單 Google 登入後看到客製 deny 訊息（ASCII only，CF 限制）。
+
+**登出**：TopNav 右上角「登出」連結指向 `/cdn-cgi/access/logout`，清掉兩邊 cookie。
+
+## 每日重算 cron
+
+兩條 cron：
+
+1. **Cloudflare Worker built-in cron**（`0 0 * * *` UTC = 08:00 台北）— 自動跑 `runScreenerScan`、sentiment、digest pipeline，內部觸發不受 Access 影響。
+2. **Local Mac crontab**（18:30 台北，盤後重算）— [scripts/cron-rescore.sh](scripts/cron-rescore.sh) 用 service token 打 `/api/admin/screener-scan`：
+
+```cron
+30 18 * * * /Users/yihao.wang/project/finance-dashboard/scripts/cron-rescore.sh >> ~/.local/var/log/finance-dashboard-rescore.log 2>&1
+```
+
+需在 `.env` 設 `ADMIN_TOKEN`、`CF_ACCESS_CLIENT_ID`、`CF_ACCESS_CLIENT_SECRET`。
 
 ## 本機 AI Digest 安裝（Mac）
 
