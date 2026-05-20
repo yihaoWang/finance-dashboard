@@ -67,18 +67,18 @@ export const Hero = ({ quote, kpi, valuation }: Props) => {
   const isUp = quote.change >= 0;
   const leds = buildLeds(quote, kpi);
   return (
-    <section className="rounded-2xl bg-ink-900 border border-ink-700 p-6 mb-6">
+    <section className="rounded-2xl bg-ink-900 border border-ink-700 shadow-sm p-6 mb-6">
       <div className="flex items-start justify-between gap-6 flex-wrap">
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <h1 className="text-2xl font-semibold text-zinc-100">{quote.name}</h1>
-            <span className="text-zinc-500 num text-sm">{quote.symbol}</span>
-            <span className="rounded-md px-2 py-0.5 text-xs text-zinc-400 bg-ink-800 border border-ink-700">
+            <h1 className="text-2xl font-semibold text-slate-900">{quote.name}</h1>
+            <span className="text-slate-600 num text-sm">{quote.symbol}</span>
+            <span className="rounded-md px-2 py-0.5 text-xs text-slate-600 bg-ink-800 border border-ink-700 shadow-sm">
               上市
             </span>
           </div>
           <div className="flex items-baseline gap-3 flex-wrap">
-            <div className="text-5xl font-semibold num text-zinc-100">{quote.price.toFixed(2)}</div>
+            <div className="text-5xl font-semibold num text-slate-900">{quote.price.toFixed(2)}</div>
             <div className={`num text-lg ${isUp ? 'text-up' : 'text-down'}`}>
               {isUp ? '+' : ''}{quote.change.toFixed(2)} ({quote.changePct.toFixed(2)}%)
             </div>
@@ -88,44 +88,44 @@ export const Hero = ({ quote, kpi, valuation }: Props) => {
               </span>
             )}
           </div>
-          <div className="text-xs text-zinc-500 mt-2 num">
+          <div className="text-xs text-slate-600 mt-2 num">
             行情時間 {fmtMarketTime(quote.marketTime)} · 拉取於 {new Date(quote.updatedAt).toLocaleTimeString('zh-TW')}
           </div>
         </div>
         <div className="flex gap-6 text-sm flex-wrap">
           <div>
-            <div className="text-zinc-500 text-xs mb-1">市值</div>
-            <div className="num text-zinc-200">{fmtCap(quote.marketCap)}</div>
+            <div className="text-slate-600 text-xs mb-1">市值</div>
+            <div className="num text-slate-800">{fmtCap(quote.marketCap)}</div>
           </div>
           <div>
-            <div className="text-zinc-500 text-xs mb-1">成交量</div>
-            <div className="num text-zinc-200">{fmtVol(quote.volume)}</div>
+            <div className="text-slate-600 text-xs mb-1">成交量</div>
+            <div className="num text-slate-800">{fmtVol(quote.volume)}</div>
           </div>
           <div>
-            <div className="text-zinc-500 text-xs mb-1">52W 高低</div>
-            <div className="num text-zinc-200">
+            <div className="text-slate-600 text-xs mb-1">52W 高低</div>
+            <div className="num text-slate-800">
               {quote.high52w?.toFixed(0) ?? '—'} / {quote.low52w?.toFixed(0) ?? '—'}
             </div>
           </div>
           {valuation?.marketPe != null && (
             <div>
-              <div className="text-zinc-500 text-xs mb-1">
+              <div className="text-slate-600 text-xs mb-1">
                 {valuation.marketLabel ?? 'TAIEX'} P/E
               </div>
-              <div className="num text-zinc-200">{valuation.marketPe.toFixed(2)}</div>
+              <div className="num text-slate-800">{valuation.marketPe.toFixed(2)}</div>
             </div>
           )}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-ink-700">
-        <span className="text-xs text-zinc-500 mr-1">風險燈號</span>
+        <span className="text-xs text-slate-600 mr-1">風險燈號</span>
         {leds.map((led) => (
           <div
             key={led.label}
-            className="rounded-md px-2.5 py-1 flex items-center gap-2 text-xs bg-ink-800 border border-ink-700"
+            className="rounded-md px-2.5 py-1 flex items-center gap-2 text-xs bg-ink-800 border border-ink-700 shadow-sm"
           >
             <span className={`w-2 h-2 rounded-full ${ledColor(led.kind)}`} />
-            <span className="text-zinc-300">{led.label}</span>
+            <span className="text-slate-700">{led.label}</span>
           </div>
         ))}
       </div>

@@ -4,6 +4,7 @@ import { usePeace } from '../hooks/usePeace';
 import { useValuation } from '../hooks/useValuation';
 import { postPeaceTags } from '../lib/api';
 import type { MoatCategory, PeaceBundle, PeaceCriterion, RiskCategory, ValuationBundle } from '@fd/shared';
+import { SectionCard } from './SectionCard';
 
 const ALL_MOAT: MoatCategory[] = ['無形資產', '成本優勢', '網路效應', '高轉換成本', '有效規模'];
 const ALL_RISK: RiskCategory[] = ['R 監管風險', 'I 通脹風險', 'S 科技風險', 'K 關鍵人物風險'];
@@ -82,13 +83,13 @@ const TagEditModal = ({ symbol, kind, current, onClose }: TagEditModalProps) => 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
       <div
-        className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 min-w-[300px] shadow-2xl"
+        className="bg-white border border-slate-300 rounded-xl p-6 min-w-[300px] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-sm font-semibold text-zinc-200 mb-4">編輯 {label}</h3>
+        <h3 className="text-sm font-semibold text-slate-800 mb-4">編輯 {label}</h3>
         <div className="space-y-2">
           {options.map((opt) => (
-            <label key={opt} className="flex items-center gap-2 cursor-pointer text-sm text-zinc-300">
+            <label key={opt} className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
               <input
                 type="checkbox"
                 checked={selected.includes(opt)}
@@ -112,7 +113,7 @@ const TagEditModal = ({ symbol, kind, current, onClose }: TagEditModalProps) => 
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs py-1.5 rounded"
+            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-1.5 rounded"
           >
             取消
           </button>
@@ -230,11 +231,17 @@ const tagRows = (
   all: readonly string[],
   active: string[],
   startNo: number,
+  reasons: Record<string, string> = {},
 ): DataRow[] =>
   all.map((label, i) => {
     const hit = active.includes(label);
     const display = kind === 'risk' ? (RISK_KEY_LABEL[label] ?? label) : label;
-    const detail = kind === 'moat' ? (MOAT_DETAIL[label] ?? '') : (RISK_DETAIL[label] ?? '');
+    const genericDetail =
+      kind === 'moat' ? (MOAT_DETAIL[label] ?? '') : (RISK_DETAIL[label] ?? '');
+    // Prefer per-stock reason when tag is active; fall back to generic definition.
+    const detail = hit && reasons[label] !== undefined && reasons[label] !== ''
+      ? reasons[label]
+      : genericDetail;
     const value =
       kind === 'moat' ? (hit ? '具備' : '未具備') : hit ? '有風險' : '無風險';
     return {
@@ -383,7 +390,7 @@ export const PeacePanel = ({ symbol }: Props) => {
   const { data: valuationData } = useValuation(symbol);
   const [editModal, setEditModal] = useState<'moat' | 'risk' | null>(null);
 
-  if (isLoading) return <div className="text-zinc-500 text-sm py-4">載入 PEACE 評分中…</div>;
+  if (isLoading) return <div className="text-slate-600 text-sm py-4">載入 PEACE 評分中…</div>;
   if (error) return <div className="text-red-400 text-xs py-2">PEACE 評分載入失敗：{error.message}</div>;
   if (!data) return null;
 
@@ -393,8 +400,26 @@ export const PeacePanel = ({ symbol }: Props) => {
   const criteriaByGroup = (g: string) => bundle.criteria.filter((c) => c.group === g);
 
   const sections: Section[] = [
-    { section: '質化優勢分析', group: '護城河', rows: tagRows('moat', ALL_MOAT, bundle.moat, 1) },
-    { section: '質化風險分析', group: 'RISK', rows: tagRows('risk', ALL_RISK, bundle.risk, 6) },
+    {
+      section: '質化優勢分析',
+      group: '護城河',
+      rows: [
+        ...(bundle.moatNote !== null && bundle.moatNote !== ''
+          ? [{ no: null, label: '🔍 Claude 整體判斷', verdict: 'watch' as Verdict, value: '—', detail: bundle.moatNote }]
+          : []),
+        ...tagRows('moat', ALL_MOAT, bundle.moat, 1, bundle.moatReasons),
+      ],
+    },
+    {
+      section: '質化風險分析',
+      group: 'RISK',
+      rows: [
+        ...(bundle.riskNote !== null && bundle.riskNote !== ''
+          ? [{ no: null, label: '🔍 Claude 整體判斷', verdict: 'watch' as Verdict, value: '—', detail: bundle.riskNote }]
+          : []),
+        ...tagRows('risk', ALL_RISK, bundle.risk, 6, bundle.riskReasons),
+      ],
+    },
     { section: '量化風險潛力分析', group: GROUP_LABEL.P!, rows: criteriaByGroup('P').map(criterionToRow) },
     { section: '量化風險潛力分析', group: GROUP_LABEL.E!, rows: criteriaByGroup('E').map(criterionToRow) },
     { section: '量化風險潛力分析', group: GROUP_LABEL.A!, rows: criteriaByGroup('A').map(criterionToRow) },
@@ -441,38 +466,39 @@ export const PeacePanel = ({ symbol }: Props) => {
   }
 
   return (
-    <section className="mb-6 rounded-lg border border-zinc-800 bg-zinc-900/40 overflow-hidden">
-      <header className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-sm font-semibold text-zinc-200">好公司分析</h2>
-          <span className="text-xs text-zinc-500">{symbol}</span>
-        </div>
+    <>
+    <SectionCard
+      title="好公司分析"
+      subtitle={symbol}
+      storageKey="peace"
+      bodyPadding="none"
+      actions={
         <div className="flex items-center gap-4 text-xs">
           <button
             type="button"
             onClick={() => setEditModal('moat')}
-            className="text-zinc-400 hover:text-zinc-200"
+            className="text-slate-600 hover:text-slate-900"
           >
             編輯護城河
           </button>
           <button
             type="button"
             onClick={() => setEditModal('risk')}
-            className="text-zinc-400 hover:text-zinc-200"
+            className="text-slate-600 hover:text-slate-900"
           >
             編輯 RISK
           </button>
-          <span className="text-zinc-400">
-            得分 <span className="text-zinc-100 font-semibold">{bundle.score}/{bundle.total}</span>
-            <span className="text-zinc-600 mx-1">·</span>
-            核心 <span className="text-zinc-100">{bundle.priorityScore}/6</span>
+          <span className="text-slate-600">
+            得分 <span className="text-slate-900 font-semibold">{bundle.score}/{bundle.total}</span>
+            <span className="text-slate-500 mx-1">·</span>
+            核心 <span className="text-slate-900">{bundle.priorityScore}/6</span>
           </span>
         </div>
-      </header>
-
+      }
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
-          <thead className="text-[11px] text-zinc-500 bg-zinc-900/60 border-b border-zinc-800">
+          <thead className="text-[11px] text-slate-600 bg-slate-100/60 border-b border-slate-200">
             <tr>
               <th className="text-left px-3 py-2 font-medium w-32">分析面向</th>
               <th className="text-left px-3 py-2 font-medium w-28">分類</th>
@@ -485,11 +511,11 @@ export const PeacePanel = ({ symbol }: Props) => {
           </thead>
           <tbody>
             {flat.map((f) => (
-              <tr key={f.key} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
+              <tr key={f.key} className="border-b border-slate-200/50 hover:bg-slate-100/20">
                 {f.section !== null && (
                   <td
                     rowSpan={f.sectionSpan}
-                    className="px-3 py-2 align-top text-zinc-300 font-medium border-r border-zinc-800 bg-zinc-900/60"
+                    className="px-3 py-2 align-top text-slate-700 font-medium border-r border-slate-200 bg-slate-100/60"
                   >
                     {f.section}
                   </td>
@@ -497,35 +523,35 @@ export const PeacePanel = ({ symbol }: Props) => {
                 {f.group !== null && (
                   <td
                     rowSpan={f.groupSpan}
-                    className="px-3 py-2 align-top text-zinc-400 border-r border-zinc-800"
+                    className="px-3 py-2 align-top text-slate-600 border-r border-slate-200"
                   >
                     {f.group}
                   </td>
                 )}
-                <td className="px-2 py-1.5 text-center text-zinc-500 tabular-nums">
+                <td className="px-2 py-1.5 text-center text-slate-600 tabular-nums">
                   {f.row.no ?? ''}
                 </td>
-                <td className="px-3 py-1.5 text-zinc-300">{f.row.label}</td>
+                <td className="px-3 py-1.5 text-slate-700">{f.row.label}</td>
                 <td
                   className={`px-3 py-1.5 text-center font-bold ${VERDICT_CLASS[f.row.verdict]}`}
                 >
                   {VERDICT_SYMBOL[f.row.verdict]}
                 </td>
-                <td className="px-3 py-1.5 text-right text-zinc-300 tabular-nums">
+                <td className="px-3 py-1.5 text-right text-slate-700 tabular-nums">
                   {f.row.value}
                   {f.row.threshold !== undefined && (
-                    <span className="text-zinc-600"> ({f.row.threshold})</span>
+                    <span className="text-slate-500"> ({f.row.threshold})</span>
                   )}
                 </td>
-                <td className="px-3 py-1.5 text-zinc-500 text-[11px] leading-snug">
+                <td className="px-3 py-1.5 text-slate-600 text-[11px] leading-snug">
                   {f.row.detail ?? ''}
                 </td>
               </tr>
             ))}
-            <tr className="bg-zinc-900/80 border-t-2 border-zinc-700">
+            <tr className="bg-slate-50 border-t-2 border-slate-300">
               <td
                 colSpan={4}
-                className="px-3 py-3 text-zinc-300 font-medium border-r border-zinc-800"
+                className="px-3 py-3 text-slate-700 font-medium border-r border-slate-200"
               >
                 決策（買入、觀望、不碰）
               </td>
@@ -537,132 +563,202 @@ export const PeacePanel = ({ symbol }: Props) => {
               <td className={`px-3 py-3 font-semibold ${VERDICT_CLASS[decision.verdict]}`}>
                 {decision.label}
               </td>
-              <td className="px-3 py-3 text-zinc-500 text-[11px]">{decision.oneLine}</td>
+              <td className="px-3 py-3 text-slate-600 text-[11px]">{decision.oneLine}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      {/* Decision rationale */}
-      <div className="border-t border-zinc-800 bg-zinc-900/30 px-4 py-4">
-        <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-xs text-zinc-500">📋 決策依據</span>
-          <span className={`text-xs font-semibold ${VERDICT_CLASS[decision.verdict]}`}>
-            {decision.label}
-          </span>
-        </div>
-        <p className="text-xs text-zinc-300 leading-relaxed mb-4">{decision.rationale}</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Group breakdown */}
-          <div>
-            <h4 className="text-[11px] font-semibold text-zinc-400 mb-2">分組得分</h4>
-            <div className="space-y-1.5">
-              {decision.groupScores.map((g) => {
-                const pct = g.total === 0 ? 0 : (g.passed / g.total) * 100;
-                const color =
-                  pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
-                return (
-                  <div key={g.group} className="flex items-center gap-2 text-[11px]">
-                    <span className="w-16 text-zinc-400">{g.group}</span>
-                    <div className="flex-1 h-1.5 bg-zinc-800 rounded overflow-hidden">
-                      <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="w-12 text-right text-zinc-300 tabular-nums">
-                      {g.passed}/{g.total}
-                    </span>
+      {/* Decision panel — verdict hero + two-column pros/cons */}
+      {(() => {
+        const coreGap = Math.max(0, 5 - bundle.priorityScore);
+        const totalGap = Math.max(0, 11 - bundle.score);
+        const verdictTone =
+          decision.verdict === 'pass'
+            ? {
+                ring: 'ring-emerald-500/40 bg-emerald-500/10 border-emerald-500/30',
+                accent: 'text-emerald-400',
+              }
+            : decision.verdict === 'watch'
+              ? {
+                  ring: 'ring-amber-500/40 bg-amber-500/10 border-amber-500/30',
+                  accent: 'text-amber-400',
+                }
+              : {
+                  ring: 'ring-red-500/40 bg-red-500/10 border-red-500/30',
+                  accent: 'text-red-400',
+                };
+        return (
+          <div className="border-t border-slate-200 bg-slate-100/60 px-4 py-5">
+            {/* Hero header: verdict pill + PEACE strip + gap indicator */}
+            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-4 items-stretch mb-4">
+              <div
+                className={`rounded-xl border ring-1 ${verdictTone.ring} px-5 py-3 flex items-center gap-4 min-w-[200px]`}
+              >
+                <div className={`text-4xl font-bold leading-none ${verdictTone.accent}`}>
+                  {VERDICT_SYMBOL[decision.verdict]}
+                </div>
+                <div>
+                  <div className={`text-xl font-bold leading-tight ${verdictTone.accent}`}>
+                    {decision.label}
                   </div>
-                );
-              })}
-              <div className="flex items-center gap-2 text-[11px] pt-1 border-t border-zinc-800 mt-2">
-                <span className="w-16 text-zinc-400">護城河</span>
-                <span className="flex-1 text-zinc-300">
-                  {decision.moatCount > 0
-                    ? `具備 ${decision.moatCount} 項`
-                    : '尚未標記'}
+                  <div className="text-[11px] text-slate-600 tabular-nums mt-0.5">
+                    核心 {bundle.priorityScore}/6 · 總分 {bundle.score}/{bundle.total}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-5 gap-2">
+                {decision.groupScores.map((g) => {
+                  const pct = g.total === 0 ? 0 : (g.passed / g.total) * 100;
+                  const color =
+                    pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+                  const letter = g.group.charAt(0);
+                  return (
+                    <div
+                      key={g.group}
+                      className="rounded-lg bg-slate-100/60 border border-slate-200 px-2 py-2 flex flex-col items-center justify-between gap-1.5"
+                    >
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-base font-bold text-slate-800">{letter}</span>
+                        <span className="text-[10px] text-slate-600 tabular-nums">
+                          {g.passed}/{g.total}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded overflow-hidden">
+                        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] text-slate-600 truncate w-full text-center">
+                        {g.group.slice(2) || letter}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-col justify-center text-right min-w-[120px]">
+                {decision.verdict === 'pass' ? (
+                  <span className={`text-xs font-medium ${verdictTone.accent}`}>已達買入門檻</span>
+                ) : (
+                  <>
+                    <span className="text-[10px] text-slate-600">距買入</span>
+                    <span className="text-sm text-slate-700 tabular-nums">
+                      +{coreGap} 核心 / +{totalGap} 總分
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Rationale single line */}
+            <p className="text-xs text-slate-700 leading-relaxed mb-4">{decision.rationale}</p>
+
+            {/* Two-column pros/cons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.04] p-3">
+                <h4 className="text-[11px] font-semibold text-emerald-400 mb-2 flex items-baseline gap-1.5">
+                  <span>✓ 主要優勢</span>
+                  <span className="text-slate-600 font-normal tabular-nums">
+                    ({decision.strengths.length})
+                  </span>
+                </h4>
+                {decision.strengths.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">無</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {decision.strengths.map((c) => (
+                      <li key={c.id} className="text-[11px] text-slate-700 flex gap-1.5">
+                        <span className="text-emerald-500 shrink-0 mt-px">▸</span>
+                        <span className="leading-snug">
+                          <span className="text-slate-600 tabular-nums">#{c.id}</span>{' '}
+                          <span className="text-slate-800">{c.label}</span>
+                          <span className="text-slate-600"> — {c.detail}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-red-500/20 bg-red-500/[0.04] p-3">
+                <h4 className="text-[11px] font-semibold text-red-400 mb-2 flex items-baseline gap-1.5">
+                  <span>✗ 主要疑慮</span>
+                  <span className="text-slate-600 font-normal tabular-nums">
+                    ({decision.weaknesses.length})
+                  </span>
+                  <span className="text-slate-500 font-normal text-[10px]">
+                    ★ = 核心未過
+                  </span>
+                </h4>
+                {decision.weaknesses.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">無</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {decision.weaknesses.map((c) => (
+                      <li key={c.id} className="text-[11px] text-slate-700 flex gap-1.5">
+                        <span className={`shrink-0 mt-px ${c.priority ? 'text-amber-400' : 'text-red-500'}`}>
+                          {c.priority ? '★' : '▸'}
+                        </span>
+                        <span className="leading-snug">
+                          <span className="text-slate-600 tabular-nums">#{c.id}</span>{' '}
+                          <span className="text-slate-800">{c.label}</span>
+                          <span className="text-slate-600"> — {c.detail}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            {/* Footer chip row: moat / risk on left, WACC + timestamp on right */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-200 text-[11px]">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded-md px-2 py-0.5 border ${
+                    decision.moatCount > 0
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                >
+                  護城河 · {decision.moatCount > 0 ? `${decision.moatCount} 項` : '尚未標記'}
+                </span>
+                <span
+                  className={`rounded-md px-2 py-0.5 border ${
+                    decision.riskCount > 0
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                >
+                  風險 · {decision.riskCount > 0 ? `${decision.riskCount} 項` : '尚未標記'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[11px]">
-                <span className="w-16 text-zinc-400">風險</span>
-                <span className="flex-1 text-zinc-300">
-                  {decision.riskCount > 0
-                    ? `${decision.riskCount} 項已標記`
-                    : '尚未標記'}
-                </span>
+              <div className="text-slate-500 tabular-nums">
+                WACC {bundle.wacc.toFixed(1)}% （10Y 美債 + 5%）
+                <span className="mx-2">·</span>
+                {new Date(bundle.computedAt).toLocaleString('zh-TW')}
               </div>
             </div>
           </div>
-
-          {/* Strengths */}
-          <div>
-            <h4 className="text-[11px] font-semibold text-emerald-400 mb-2">
-              ✓ 主要優勢（{decision.strengths.length}）
-            </h4>
-            {decision.strengths.length === 0 ? (
-              <p className="text-[11px] text-zinc-600 italic">無</p>
-            ) : (
-              <ul className="space-y-1">
-                {decision.strengths.map((c) => (
-                  <li key={c.id} className="text-[11px] text-zinc-300 flex gap-1.5">
-                    <span className="text-emerald-500 shrink-0">•</span>
-                    <span>
-                      <span className="text-zinc-400">#{c.id}</span> {c.label}
-                      <span className="text-zinc-500"> — {c.detail}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        {/* Weaknesses spanning full width */}
-        <div>
-          <h4 className="text-[11px] font-semibold text-red-400 mb-2">
-            ✗ 主要疑慮（{decision.weaknesses.length}）
-            <span className="text-zinc-500 font-normal ml-1">含核心未過項，最多顯示 4 項</span>
-          </h4>
-          {decision.weaknesses.length === 0 ? (
-            <p className="text-[11px] text-zinc-600 italic">無</p>
-          ) : (
-            <ul className="space-y-1">
-              {decision.weaknesses.map((c) => (
-                <li key={c.id} className="text-[11px] text-zinc-300 flex gap-1.5">
-                  <span className="text-red-500 shrink-0">•</span>
-                  <span>
-                    <span className="text-zinc-400">#{c.id}</span>
-                    {c.priority && <span className="text-amber-400"> ★核心</span>} {c.label}
-                    <span className="text-zinc-500"> — {c.detail}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      <div className="px-4 py-2 text-[11px] text-zinc-600 border-t border-zinc-800">
-        WACC 簡化模型：10Y 美債殖利率 + 5% = {bundle.wacc.toFixed(1)}%
-        <span className="mx-2">·</span>
-        運算時間 {new Date(bundle.computedAt).toLocaleString('zh-TW')}
-      </div>
-
-      {editModal === 'moat' && (
-        <TagEditModal
-          symbol={symbol}
-          kind="moat"
-          current={bundle.moat}
-          onClose={() => setEditModal(null)}
-        />
-      )}
-      {editModal === 'risk' && (
-        <TagEditModal
-          symbol={symbol}
-          kind="risk"
-          current={bundle.risk}
-          onClose={() => setEditModal(null)}
-        />
-      )}
-    </section>
+        );
+      })()}
+    </SectionCard>
+    {editModal === 'moat' && (
+      <TagEditModal
+        symbol={symbol}
+        kind="moat"
+        current={bundle.moat}
+        onClose={() => setEditModal(null)}
+      />
+    )}
+    {editModal === 'risk' && (
+      <TagEditModal
+        symbol={symbol}
+        kind="risk"
+        current={bundle.risk}
+        onClose={() => setEditModal(null)}
+      />
+    )}
+    </>
   );
 };

@@ -19,14 +19,14 @@ const INDICATOR_DESCRIPTIONS: Record<IndicatorKey, string> = {
 
 const ZONE_BG: Record<SentimentIndicator['zone'], string> = {
   healthy: 'bg-emerald-500/10 border-emerald-500/40',
-  neutral: 'bg-slate-500/10 border-slate-500/40',
+  neutral: 'bg-slate-400/10 border-slate-400/40',
   caution: 'bg-amber-500/10 border-amber-500/40',
   danger: 'bg-red-500/10 border-red-500/40',
 };
 
 const ZONE_DOT: Record<SentimentIndicator['zone'], string> = {
   healthy: 'bg-emerald-400',
-  neutral: 'bg-slate-400',
+  neutral: 'bg-slate-500',
   caution: 'bg-amber-400',
   danger: 'bg-red-400',
 };
@@ -40,18 +40,18 @@ export const SentimentCard = ({ indicator }: Props) => {
     <div className={`rounded-lg border p-4 ${ZONE_BG[indicator.zone]}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm text-slate-300">{indicator.label}</span>
+          <span className="text-sm text-slate-700">{indicator.label}</span>
           <span className="group relative inline-flex">
             <span
               tabIndex={0}
-              className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-slate-500 text-[10px] font-semibold text-slate-400 hover:border-slate-300 hover:text-slate-200 focus:border-slate-300 focus:text-slate-200 focus:outline-none"
+              className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-slate-400 text-[10px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800 focus:border-slate-300 focus:text-slate-800 focus:outline-none"
               aria-label={`${indicator.label} 說明`}
             >
               i
             </span>
             <span
               role="tooltip"
-              className="pointer-events-none invisible absolute left-0 top-5 z-20 w-64 rounded-md border border-slate-700 bg-slate-900 p-2.5 text-xs leading-relaxed text-slate-200 opacity-0 shadow-lg shadow-black/40 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+              className="pointer-events-none invisible absolute left-0 top-5 z-20 w-64 rounded-md border border-slate-300 bg-white p-2.5 text-xs leading-relaxed text-slate-800 opacity-0 shadow-lg shadow-black/40 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
             >
               {INDICATOR_DESCRIPTIONS[indicator.key]}
             </span>
@@ -60,19 +60,19 @@ export const SentimentCard = ({ indicator }: Props) => {
         <span className={`h-2 w-2 rounded-full ${ZONE_DOT[indicator.zone]}`} />
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-2xl font-semibold text-slate-100">
+        <span className="text-2xl font-semibold text-slate-900">
           {indicator.value}
-          <span className="ml-0.5 text-sm text-slate-400">{indicator.unit}</span>
+          <span className="ml-0.5 text-sm text-slate-600">{indicator.unit}</span>
         </span>
-        <span className="text-xs text-slate-400">{changeStr} (5D)</span>
+        <span className="text-xs text-slate-600">{changeStr} (5D)</span>
       </div>
-      <div className="mt-2 h-1.5 w-full rounded bg-slate-800">
-        <div className="h-full rounded bg-slate-400" style={{ width: `${indicator.percentile}%` }} />
+      <div className="mt-2 h-1.5 w-full rounded bg-slate-100">
+        <div className="h-full rounded bg-slate-500" style={{ width: `${indicator.percentile}%` }} />
       </div>
-      <div className="mt-1 text-xs text-slate-500">歷史百分位 {indicator.percentile}</div>
-      <div className="mt-2 text-xs text-slate-300">{indicator.explanation}</div>
+      <div className="mt-1 text-xs text-slate-600">歷史百分位 {indicator.percentile}</div>
+      <div className="mt-2 text-xs text-slate-700">{indicator.explanation}</div>
       {indicator.landmarks.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-xs text-slate-400">
+        <ul className="mt-2 space-y-0.5 text-xs text-slate-600">
           {indicator.landmarks.map((lm) => (
             <li key={`${lm.event}-${lm.date}`}>• {lm.event} {lm.value}{indicator.unit}</li>
           ))}

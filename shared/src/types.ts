@@ -196,6 +196,10 @@ export interface PeaceBundle {
   criteria: PeaceCriterion[];
   moat: MoatCategory[];
   risk: RiskCategory[];
+  moatReasons: Record<string, string>;    // per-stock reasoning (Claude deep research)
+  riskReasons: Record<string, string>;
+  moatNote: string | null;                // overall assessment, e.g. "no moat because…"
+  riskNote: string | null;
   wacc: number;           // computed WACC used for #16
   computedAt: string;
 }
@@ -284,12 +288,41 @@ export interface ValuationBundle {
   computedAt: number;
 }
 
+export type StyleTag = 'value' | 'growth' | 'dividend' | 'hiddenChampion' | 'momentum';
+
 export interface ScreenerRow {
   symbol: string;
+  name: string | null;
+  // PEACE scoring
   score: number;
   total: number;
   priorityScore: number;
   priorityTotal: number;
+  weightedScore: number;
+  // Tags
+  moatCount: number;
+  riskCount: number;
+  styleTags: StyleTag[];
+  highlights: string[];
+  concerns: string[];
+  // Granular: which of 16 criteria passed, plus tag arrays
+  criteriaPassed: Record<string, boolean>;     // key "1".."16" → true/false (null criteria excluded)
+  moatTags: string[];
+  riskTags: string[];
+  // Valuation / fundamentals (all nullable — cron may fail per-metric)
+  marketCap: number | null;
+  currentPe: number | null;
+  pe5yAvg: number | null;
+  pePremium: number | null;          // (current/avg) - 1
+  yieldPct: number | null;
+  roe5yMin: number | null;
+  epsCagr: number | null;
+  revenueCagr: number | null;
+  monthlyRevYoy: number | null;
+  deRatio: number | null;
+  grossMargin: number | null;
+  opMargin: number | null;
+  netMargin: number | null;
   updatedAt: number;
 }
 

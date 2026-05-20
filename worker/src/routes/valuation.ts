@@ -7,7 +7,7 @@ import { fetchYahooHistory } from '../sources/yahoo';
 import { fetchFiveYearFinancials } from '../sources/finmind';
 import { fetchIndustryPe, fetchMarketPe } from '../sources/industry-pe';
 
-const KV_PREFIX = 'valuation:';
+const KV_PREFIX = 'valuation:v2:';
 const TTL = 6 * 3600;
 
 export const valuation = new Hono<{ Bindings: Env }>();
@@ -83,6 +83,18 @@ valuation.get('/:symbol', async (c) => {
     if (projected > 0) forwardPe = currentPe / projected;
   }
 
+  // FinMind PER endpoint doesn't include EPS, so trailingEps/forwardEps come back null.
+  // Derive from latest close ÷ PE (works whenever PE is set).
+  const lastClose = history.length > 0 ? history[history.length - 1]?.close ?? null : null;
+  const derivedTrailingEps =
+    currentPe !== null && currentPe > 0 && lastClose !== null && lastClose > 0
+      ? lastClose / currentPe
+      : null;
+  const derivedForwardEps =
+    forwardPe !== null && forwardPe > 0 && lastClose !== null && lastClose > 0
+      ? lastClose / forwardPe
+      : null;
+
   const bundle: ValuationBundle = {
     marketPe: market.value,
     marketLabel: market.label,
@@ -92,8 +104,8 @@ valuation.get('/:symbol', async (c) => {
     currentPe,
     forwardPe,
     peg,
-    trailingEps: stockStats?.trailingEps ?? null,
-    forwardEps: stockStats?.forwardEps ?? null,
+    trailingEps: stockStats?.trailingEps ?? derivedTrailingEps,
+    forwardEps: stockStats?.forwardEps ?? derivedForwardEps,
     industryPe: industry.averagePe,
     computedAt: Date.now(),
   };

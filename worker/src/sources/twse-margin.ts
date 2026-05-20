@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '../lib/http';
+import { finMindToken } from '../lib/finmind-token';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 
 export type MarginInfo = {
@@ -208,7 +209,7 @@ export const fetchMarginMaintenanceDaily = async (
   opts: Opts = {},
 ): Promise<{ date: string; value: number }> => {
   const startDate = isoDateNDaysAgo(7);
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}&token=${finMindToken()}`;
   let res: Response;
   try {
     res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });
@@ -246,7 +247,7 @@ export const fetchMarginBalanceDaily = async (
   opts: Opts = {},
 ): Promise<{ date: string; value: number }> => {
   const startDate = isoDateNDaysAgo(7);
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}&token=${finMindToken()}`;
   let res: Response;
   try {
     res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });
@@ -277,7 +278,7 @@ export const fetchShortLongRatioDaily = async (
   opts: Opts = {},
 ): Promise<{ date: string; value: number }> => {
   const startDate = isoDateNDaysAgo(7);
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalMarginPurchaseShortSale&start_date=${startDate}&token=${finMindToken()}`;
   let res: Response;
   try {
     res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });

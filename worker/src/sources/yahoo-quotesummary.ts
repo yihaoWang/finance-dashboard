@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '../lib/http';
+import { finMindToken } from '../lib/finmind-token';
 
 export type YahooKeyStats = {
   trailingPE: number | null;
@@ -27,7 +28,7 @@ const fetchTwPer = async (
 ): Promise<YahooKeyStats> => {
   const today = new Date().toISOString().slice(0, 10);
   const start = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
-  const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPER&data_id=${symbol}&start_date=${start}&end_date=${today}&token=`;
+  const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPER&data_id=${symbol}&start_date=${start}&end_date=${today}&token=${finMindToken()}`;
   try {
     const res = await fetchWithRetry(
       url,

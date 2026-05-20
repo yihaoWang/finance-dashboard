@@ -12,7 +12,7 @@ export const StockDetail = ({ symbol }: Props) => {
   const { data, isLoading, error } = useStock(symbol);
   const { data: valuationData } = useValuation(symbol);
 
-  if (isLoading) return <div className="text-zinc-500 p-6">載入中…</div>;
+  if (isLoading) return <div className="text-slate-600 p-6">載入中…</div>;
   if (error) return <div className="text-down p-6">錯誤：{(error as Error).message}</div>;
   if (!data) return null;
 
@@ -24,9 +24,7 @@ export const StockDetail = ({ symbol }: Props) => {
         <Hero quote={quote} kpi={kpi} valuation={valuationData?.data ?? null} />
       </div>
       <PeacePanel symbol={symbol} />
-      <div className="mb-6">
-        <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
-      </div>
+      <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
       <NewsPanel symbol={symbol} />
       {data.warnings && (

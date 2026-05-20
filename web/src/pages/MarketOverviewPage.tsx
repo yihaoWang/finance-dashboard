@@ -18,7 +18,7 @@ export const MarketOverviewPage = ({ watchlist, setWatchlist }: Props) => (
         <SentimentPanel />
       </div>
     </main>
-    <footer className="text-center text-xs text-zinc-600 py-8">
+    <footer className="text-center text-xs text-slate-500 py-8">
       Tickr · 資料來源：證交所 · Yahoo Finance · FRED · 僅供參考非投資建議
     </footer>
   </div>

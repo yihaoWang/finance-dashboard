@@ -12,13 +12,123 @@ import { fetchFredSnapshot } from './sources/fred';
 import { computePeace } from './lib/peace';
 import { getTags } from './cache/d1-tags';
 import { upsertScreenerScore } from './cache/d1-screener';
-import { SCREENER_UNIVERSE } from './lib/screener-universe';
+import { fetchYahooQuote } from './sources/yahoo';
+import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from './sources/twse';
+import { fetchSharesOutstanding, fetchSymbolName, fetchUniverse } from './sources/industry-pe';
+import { deriveMetrics, buildScreenerOutput } from './lib/screener-score';
+import { setFinMindToken } from './lib/finmind-token';
 import type { IndicatorKey } from '@fd/shared';
 
 const WACC_FALLBACK = 9.5;
 const WACC_PREMIUM = 5.0;
 
-export const runScreenerScan = async (env: Env): Promise<void> => {
+const scanOne = async (env: Env, symbol: string, wacc: number, now: number): Promise<boolean> => {
+  const [financials, tags, quoteR, twseR, sharesR, revenueR, nameR] = await Promise.allSettled([
+    fetchFiveYearFinancials(env.KV, symbol),
+    getTags(env.DB, symbol),
+    fetchYahooQuote(symbol),
+    fetchTwseBwibbu(env.KV, symbol),
+    fetchSharesOutstanding(env.KV, symbol),
+    fetchTwseMonthlyRevenue(env.KV, symbol),
+    fetchSymbolName(env.KV, symbol),
+  ]);
+  if (financials.status !== 'fulfilled') return false; // no 5y financials → skip silently
+  if (tags.status !== 'fulfilled') return false;
+  if (financials.value.rows.length < 2) return false;
+
+  const bundle = computePeace(financials.value, wacc, tags.value.moat, tags.value.risk, {
+    moatReasons: tags.value.moatReasons,
+    riskReasons: tags.value.riskReasons,
+    moatNote: tags.value.moatNote,
+    riskNote: tags.value.riskNote,
+  });
+  const priorityTotal = bundle.criteria.filter((c) => c.priority).length;
+  const criteriaPassed: Record<string, boolean> = {};
+  for (const c of bundle.criteria) {
+    if (c.passed !== null) criteriaPassed[String(c.id)] = c.passed;
+  }
+
+  const quote = quoteR.status === 'fulfilled' ? quoteR.value : null;
+  const twse = twseR.status === 'fulfilled' ? twseR.value : null;
+  const shares = sharesR.status === 'fulfilled' ? sharesR.value : null;
+  const revenue = revenueR.status === 'fulfilled' ? revenueR.value : null;
+
+  const currentPe = twse?.pe ?? null;
+  const yieldPct = twse?.dividendYield ?? null;
+  const marketCap =
+    quote !== null && shares !== null && quote.price > 0 ? shares * quote.price : null;
+  const tpexName = nameR.status === 'fulfilled' ? nameR.value : null;
+  const name = twse?.name ?? tpexName ?? quote?.name ?? null;
+  const monthlyRevYoy = revenue?.yoy ?? null;
+
+  const metrics = deriveMetrics(financials.value, {
+    currentPe,
+    marketCap,
+    name,
+    yieldPct,
+    monthlyRevYoy,
+  });
+  const out = buildScreenerOutput(bundle, metrics);
+
+  await upsertScreenerScore(env.DB, {
+    symbol,
+    name,
+    score: bundle.score,
+    total: bundle.total,
+    priorityScore: bundle.priorityScore,
+    priorityTotal,
+    weightedScore: out.weightedScore,
+    moatCount: bundle.moat.length,
+    riskCount: bundle.risk.length,
+    styleTags: out.styleTags,
+    highlights: out.highlights,
+    concerns: out.concerns,
+    criteriaPassed,
+    moatTags: bundle.moat,
+    riskTags: bundle.risk,
+    marketCap,
+    currentPe,
+    pe5yAvg: metrics.pe5yAvg,
+    pePremium: metrics.pePremium,
+    yieldPct,
+    roe5yMin: metrics.roe5yMin,
+    epsCagr: metrics.epsCagr,
+    revenueCagr: metrics.revenueCagr,
+    monthlyRevYoy,
+    deRatio: metrics.deRatio,
+    grossMargin: metrics.grossMargin,
+    opMargin: metrics.opMargin,
+    netMargin: metrics.netMargin,
+    updatedAt: now,
+  });
+  return true;
+};
+
+export const rescoreSymbols = async (env: Env, symbols: string[]): Promise<{ ok: number; failed: number }> => {
+  setFinMindToken(env.FINMIND_API_TOKEN);
+  let wacc = WACC_FALLBACK;
+  try {
+    const fred = await fetchFredSnapshot(env);
+    if (fred.dgs10?.latest !== undefined) wacc = fred.dgs10.latest + WACC_PREMIUM;
+  } catch {/* ignore */}
+  const now = Date.now();
+  let ok = 0, failed = 0;
+  for (const symbol of symbols) {
+    try {
+      const success = await scanOne(env, symbol, wacc, now);
+      if (success) ok++; else failed++;
+    } catch (err) {
+      failed++;
+      console.warn('[rescoreSymbols] failed for', symbol, err);
+    }
+  }
+  return { ok, failed };
+};
+
+export const runScreenerScan = async (
+  env: Env,
+  opts: { offset?: number; limit?: number } = {},
+): Promise<{ ok: number; skipped: number; total: number; processed: number }> => {
   let wacc = WACC_FALLBACK;
   try {
     const fred = await fetchFredSnapshot(env);
@@ -27,27 +137,37 @@ export const runScreenerScan = async (env: Env): Promise<void> => {
     console.warn('[screener] FRED failed, using fallback WACC', err);
   }
 
+  const universe = await fetchUniverse(env.KV);
+  const offset = opts.offset ?? 0;
+  const limit = opts.limit ?? universe.length;
+  const slice = universe.slice(offset, offset + limit);
+  console.log(`[screener] universe=${universe.length} processing offset=${offset} limit=${limit} slice=${slice.length}`);
+
   const now = Date.now();
-  for (const symbol of SCREENER_UNIVERSE) {
-    try {
-      const [financials, tags] = await Promise.all([
-        fetchFiveYearFinancials(env.KV, symbol),
-        getTags(env.DB, symbol),
-      ]);
-      const bundle = computePeace(financials, wacc, tags.moat, tags.risk);
-      const priorityTotal = bundle.criteria.filter((c) => c.priority).length;
-      await upsertScreenerScore(env.DB, {
-        symbol,
-        score: bundle.score,
-        total: bundle.total,
-        priorityScore: bundle.priorityScore,
-        priorityTotal,
-        updatedAt: now,
-      });
-    } catch (err) {
-      console.error('[screener] scan failed for', symbol, err);
+  let ok = 0;
+  let skipped = 0;
+  // With FinMind token: ~1000 req/h. BATCH=4 + 300ms ≈ 13 req/s; per-stock 2-3 reqs.
+  const BATCH = 4;
+  const SLEEP_MS = 300;
+  for (let i = 0; i < slice.length; i += BATCH) {
+    const batch = slice.slice(i, i + BATCH);
+    const results = await Promise.allSettled(batch.map((s) => scanOne(env, s, wacc, now)));
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r === undefined) continue;
+      if (r.status === 'fulfilled') {
+        if (r.value) ok++; else skipped++;
+      } else {
+        skipped++;
+        console.warn('[screener] scan failed', batch[j], r.reason);
+      }
+    }
+    if (i + BATCH < slice.length) {
+      await new Promise((res) => setTimeout(res, SLEEP_MS));
     }
   }
+  console.log(`[screener] done: ok=${ok} skipped=${skipped} processed=${slice.length}/${universe.length}`);
+  return { ok, skipped, total: universe.length, processed: slice.length };
 };
 
 const WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
@@ -95,6 +215,7 @@ export const runSentimentDaily = async (env: Env): Promise<void> => {
 };
 
 export const scheduled: ExportedHandlerScheduledHandler<Env> = async (_event, env, ctx) => {
+  setFinMindToken(env.FINMIND_API_TOKEN);
   ctx.waitUntil(
     (async (): Promise<void> => {
       try {

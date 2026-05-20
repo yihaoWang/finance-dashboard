@@ -17,11 +17,11 @@ export const DigestSection = ({ sections }: Props) => (
         key={key}
         className="border border-ink-700 rounded-lg p-4 bg-ink-900/50"
       >
-        <h3 className="text-sm font-semibold text-zinc-300 mb-2 flex items-center gap-1.5">
+        <h3 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
           <span>{icon}</span>
           <span>{heading}</span>
         </h3>
-        <p className="text-sm text-zinc-300 whitespace-pre-line leading-relaxed">
+        <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
           {sections[key]}
         </p>
       </div>

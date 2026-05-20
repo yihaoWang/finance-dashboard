@@ -24,7 +24,7 @@ export const FearGreedGauge = ({ snapshot }: Props) => {
       </svg>
       <div className="text-center">
         <div className="text-3xl font-bold" style={{ color }}>{value}</div>
-        <div className="text-sm text-slate-400">{label}</div>
+        <div className="text-sm text-slate-600">{label}</div>
       </div>
     </div>
   );

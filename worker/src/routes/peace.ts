@@ -7,7 +7,7 @@ import { fetchFredSnapshot } from '../sources/fred';
 import { computePeace } from '../lib/peace';
 import { getTags, setTags } from '../cache/d1-tags';
 
-const KV_PREFIX = 'peace:';
+const KV_PREFIX = 'peace:v10:';
 const TTL = 6 * 3600;
 
 // WACC = 10Y US Treasury yield + 5% (simplified model agreed with user)
@@ -42,7 +42,12 @@ peace.get('/', async (c) => {
     getTags(c.env.DB, symbol),
   ]);
 
-  const bundle = computePeace(financials, wacc, tags.moat, tags.risk);
+  const bundle = computePeace(financials, wacc, tags.moat, tags.risk, {
+    moatReasons: tags.moatReasons,
+    riskReasons: tags.riskReasons,
+    moatNote: tags.moatNote,
+    riskNote: tags.riskNote,
+  });
 
   await kvPutJson(c.env.KV, cacheKey, bundle, TTL);
   return c.json({ data: bundle, freshness: { source: 'fetch', ageSeconds: 0 } });

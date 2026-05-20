@@ -6,9 +6,9 @@ import { listScreenerScores } from '../cache/d1-screener';
 export const screener = new Hono<{ Bindings: Env }>();
 
 screener.get('/', async (c) => {
-  const rows = await listScreenerScores(c.env.DB, 100);
+  const rows = await listScreenerScores(c.env.DB, 2000);
   // Recommended = priority pass ≥ 5 AND total score ≥ 11 (value-investing buy threshold)
-  const recommended = rows.filter((r) => r.priorityScore >= 5 && r.score >= 11).slice(0, 10);
+  const recommended = rows.filter((r) => r.priorityScore >= 5 && r.score >= 11).slice(0, 12);
   const updatedAt = rows.length ? Math.max(...rows.map((r) => r.updatedAt)) : 0;
 
   const body: ApiResponse<ScreenerBundle> = {

@@ -59,12 +59,12 @@ export const StockDetailPage = ({ watchlist, setWatchlist }: Props) => {
         {symbol.length >= 4 ? (
           <StockDetail symbol={symbol} />
         ) : (
-          <div className="text-center py-24 text-zinc-500">
+          <div className="text-center py-24 text-slate-600">
             請從 watchlist 選擇一檔股票，或在搜尋框輸入代號
           </div>
         )}
       </main>
-      <footer className="text-center text-xs text-zinc-600 py-8">
+      <footer className="text-center text-xs text-slate-500 py-8">
         Tickr · 資料來源：證交所 · Yahoo Finance · 僅供參考非投資建議
       </footer>
     </div>

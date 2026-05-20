@@ -38,7 +38,7 @@ export const TopNav = ({ onAddSymbol }: Props) => {
       <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-4 flex-wrap">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-soft" />
-          <span className="font-semibold text-zinc-100">Tickr</span>
+          <span className="font-semibold text-slate-900">Tickr</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           {NAV_LINKS.map(({ path, label }) => (
@@ -47,8 +47,8 @@ export const TopNav = ({ onAddSymbol }: Props) => {
               to={path}
               className={`px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
                 isActive(path)
-                  ? 'text-zinc-100 border-b-2 border-accent'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-ink-800'
+                  ? 'text-slate-900 border-b-2 border-accent'
+                  : 'text-slate-600 hover:text-slate-800 hover:bg-ink-800'
               }`}
             >
               {label}
@@ -58,13 +58,13 @@ export const TopNav = ({ onAddSymbol }: Props) => {
         <div className="flex-1 min-w-[200px] max-w-sm ml-2">
           <form onSubmit={handleSubmit} className="relative">
             <input
-              className="w-full bg-ink-900 border border-ink-700 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-accent"
+              className="w-full bg-ink-900 border border-ink-700 shadow-sm rounded-lg pl-9 pr-3 py-2 text-sm text-slate-800 placeholder-slate-500 focus:outline-none focus:border-accent"
               placeholder="輸入股票代號（例：2330）"
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
             <svg
-              className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500"
+              className="absolute left-3 top-2.5 w-4 h-4 text-slate-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

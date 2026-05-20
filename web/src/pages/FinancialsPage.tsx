@@ -148,39 +148,39 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} onRemove={remove} />
 
-        <div className="bg-ink-900 border border-ink-700 rounded-2xl px-5 py-4 mb-4 flex items-baseline gap-4 flex-wrap">
-          <h1 className="text-lg font-semibold text-zinc-100">
+        <div className="bg-ink-900 border border-ink-700 shadow-sm rounded-2xl px-5 py-4 mb-4 flex items-baseline gap-4 flex-wrap">
+          <h1 className="text-lg font-semibold text-slate-900">
             {symbolName} · 財報分析
           </h1>
           {headerText && (
-            <span className="text-sm text-zinc-400">{headerText}</span>
+            <span className="text-sm text-slate-600">{headerText}</span>
           )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-          <div className="lg:col-span-2 bg-ink-900 border border-ink-700 rounded-2xl p-5">
-            <h2 className="text-base font-semibold text-zinc-100 mb-4">📊 近 8 季財務數據</h2>
+          <div className="lg:col-span-2 bg-ink-900 border border-ink-700 shadow-sm rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">📊 近 8 季財務數據</h2>
             {financialsQuery.isLoading && (
-              <p className="text-sm text-zinc-500">載入中…</p>
+              <p className="text-sm text-slate-600">載入中…</p>
             )}
             {financialsQuery.isError && (
-              <p className="text-sm text-zinc-500">無法載入財報資料</p>
+              <p className="text-sm text-slate-600">無法載入財報資料</p>
             )}
             {!financialsQuery.isLoading && history.length === 0 && (
-              <p className="text-sm text-zinc-500">尚無財報資料</p>
+              <p className="text-sm text-slate-600">尚無財報資料</p>
             )}
             {history.length > 0 && (
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="text-sm border-collapse" style={{ minWidth: `${160 + history.length * 110}px` }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 z-10 text-left px-3 py-2 text-zinc-400 font-medium bg-ink-800 rounded-tl-lg whitespace-nowrap" style={{ minWidth: 110 }}>
+                      <th className="sticky left-0 z-10 text-left px-3 py-2 text-slate-600 font-medium bg-ink-800 rounded-tl-lg whitespace-nowrap" style={{ minWidth: 110 }}>
                         指標
                       </th>
                       {history.map((row) => (
                         <th
                           key={`${row.year}-${row.quarter}`}
-                          className="text-right px-3 py-2 text-zinc-300 font-medium bg-ink-800 last:rounded-tr-lg whitespace-nowrap"
+                          className="text-right px-3 py-2 text-slate-700 font-medium bg-ink-800 last:rounded-tr-lg whitespace-nowrap"
                           style={{ minWidth: 100 }}
                         >
                           {row.year} Q{row.quarter}
@@ -191,7 +191,7 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                   <tbody>
                     {METRICS.map(({ key, label, unit, formatFn }) => (
                       <tr key={key} className="border-b border-ink-800 hover:bg-accent/5">
-                        <td className="sticky left-0 z-10 bg-ink-900 px-3 py-2 text-zinc-400 whitespace-nowrap">
+                        <td className="sticky left-0 z-10 bg-ink-900 px-3 py-2 text-slate-600 whitespace-nowrap">
                           {label}
                         </td>
                         {history.map((row, i) => {
@@ -203,7 +203,7 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
                           return (
                             <td
                               key={`${row.year}-${row.quarter}`}
-                              className="px-3 py-2 text-right text-zinc-200 num whitespace-nowrap"
+                              className="px-3 py-2 text-right text-slate-800 num whitespace-nowrap"
                             >
                               <div>{formatted}</div>
                               {delta !== null && (
@@ -222,70 +222,70 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
             )}
           </div>
 
-          <div className="bg-ink-900 border border-ink-700 rounded-2xl p-5">
-            <h2 className="text-base font-semibold text-zinc-100 mb-4">📁 最新財報下載</h2>
+          <div className="bg-ink-900 border border-ink-700 shadow-sm rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">📁 最新財報下載</h2>
             <div className="flex flex-col gap-3">
               <a
                 href={links.quarterReport}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 rounded-xl text-zinc-300 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 shadow-sm rounded-xl text-slate-700 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-zinc-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-slate-600 shrink-0">
                   📄
                 </div>
                 <div>
                   <div>三大財報（損益 / 資負 / 現金流）</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">Yahoo 財報 · 含季度與年度比較</div>
+                  <div className="text-xs text-slate-600 mt-0.5">Yahoo 財報 · 含季度與年度比較</div>
                 </div>
               </a>
               <a
                 href={links.legalPresentations}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 rounded-xl text-zinc-300 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 shadow-sm rounded-xl text-slate-700 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-zinc-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-slate-600 shrink-0">
                   📊
                 </div>
                 <div>
                   <div>歷年詳細財報分析</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">Goodinfo · 經營績效 + 比率歷史</div>
+                  <div className="text-xs text-slate-600 mt-0.5">Goodinfo · 經營績效 + 比率歷史</div>
                 </div>
               </a>
               <a
                 href={links.reportsList}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 rounded-xl text-zinc-300 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 shadow-sm rounded-xl text-slate-700 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-zinc-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-slate-600 shrink-0">
                   📂
                 </div>
                 <div>
                   <div>公司基本資料</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">證交所官方公司資料頁</div>
+                  <div className="text-xs text-slate-600 mt-0.5">證交所官方公司資料頁</div>
                 </div>
               </a>
               <a
                 href={links.irPage}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 rounded-xl text-zinc-300 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 bg-ink-800 border border-ink-700 shadow-sm rounded-xl text-slate-700 text-sm hover:border-accent/50 hover:text-accent-soft transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-zinc-400 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-ink-700 grid place-items-center text-slate-600 shrink-0">
                   🌐
                 </div>
                 <div>
                   <div>公司投資人關係 IR</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">官方 IR 頁面</div>
+                  <div className="text-xs text-slate-600 mt-0.5">官方 IR 頁面</div>
                 </div>
               </a>
             </div>
           </div>
         </div>
       </main>
-      <footer className="text-center text-xs text-zinc-600 py-8">
+      <footer className="text-center text-xs text-slate-500 py-8">
         Tickr · 資料來源：證交所 · Yahoo Finance · FinMind · 僅供參考非投資建議
       </footer>
     </div>

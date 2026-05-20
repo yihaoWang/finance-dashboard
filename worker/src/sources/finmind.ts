@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '../lib/http';
+import { finMindToken } from '../lib/finmind-token';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 import type { QuarterRow, FinancialsBundle, AnnualFinancialRow, FiveYearFinancials } from '@fd/shared';
 
@@ -52,7 +53,7 @@ const fetchFinancialStatements = async (
   opts: Opts = {},
 ): Promise<Record<string, Record<string, number>>> => {
   const startDate = '2022-01-01';
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockFinancialStatements&data_id=${code}&start_date=${startDate}&token=`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockFinancialStatements&data_id=${code}&start_date=${startDate}&token=${finMindToken()}`;
   const res = await fetchWithRetry(
     url,
     { headers: { Accept: 'application/json' } },
@@ -75,7 +76,7 @@ const fetchBalanceSheet = async (
   opts: Opts = {},
 ): Promise<Record<string, Record<string, number>>> => {
   const startDate = '2022-01-01';
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockBalanceSheet&data_id=${code}&start_date=${startDate}&token=`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockBalanceSheet&data_id=${code}&start_date=${startDate}&token=${finMindToken()}`;
   const res = await fetchWithRetry(
     url,
     { headers: { Accept: 'application/json' } },
@@ -289,7 +290,7 @@ export const fetchQuarterlyFinancials = async (
 
 // ─── 5-year annual financials for PEACE framework ───────────────────────────
 
-const KV_5Y_PREFIX = 'finmind:5y:';
+const KV_5Y_PREFIX = 'finmind:5y:v2:';
 const TTL_5Y = 6 * 3600;
 
 // FinMind cash flow dataset name: TaiwanStockCashFlowsStatement
@@ -300,7 +301,7 @@ const fetchCashFlowStatement = async (
   startDate: string,
   opts: Opts = {},
 ): Promise<Record<string, Record<string, number>>> => {
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockCashFlowsStatement&data_id=${code}&start_date=${startDate}&token=`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockCashFlowsStatement&data_id=${code}&start_date=${startDate}&token=${finMindToken()}`;
   const res = await fetchWithRetry(
     url,
     { headers: { Accept: 'application/json' } },
@@ -379,21 +380,27 @@ export const fetchFiveYearFinancials = async (
   let incomeByDate: Record<string, Record<string, number>> = {};
   let balanceByDate: Record<string, Record<string, number>> = {};
   let cashFlowByDate: Record<string, Record<string, number>> = {};
+  let incomeOk = false;
+  let balanceOk = false;
+  let cashFlowOk = false;
 
   try {
     incomeByDate = await fetchFinancialStatements(symbol, opts);
+    incomeOk = Object.keys(incomeByDate).length > 0;
   } catch (err) {
     console.warn('[peace] income statement fetch failed for', symbol, err);
   }
 
   try {
     balanceByDate = await fetchBalanceSheet(symbol, opts);
+    balanceOk = Object.keys(balanceByDate).length > 0;
   } catch (err) {
     console.warn('[peace] balance sheet fetch failed for', symbol, err);
   }
 
   try {
     cashFlowByDate = await fetchCashFlowStatement(symbol, startDate, opts);
+    cashFlowOk = Object.keys(cashFlowByDate).length > 0;
   } catch (err) {
     console.warn('[peace] cash flow statement fetch failed for', symbol, err);
   }
@@ -518,8 +525,16 @@ export const fetchFiveYearFinancials = async (
   });
 
   const bundle: FiveYearFinancials = { symbol, rows, fetchedAt: Date.now() };
-  if (rows.length > 0) {
+  // Only cache if all 3 source datasets returned data — otherwise partial cache poisons
+  // every subsequent read (criteria 8-16 silently evaluate to null). For stocks where one
+  // statement legitimately has no data (e.g. holding companies w/ no balance sheet detail),
+  // we accept slower re-fetch on each call rather than caching broken data.
+  if (rows.length > 0 && incomeOk && balanceOk && cashFlowOk) {
     await kvPutJson(kv, cacheKey, bundle, TTL_5Y);
+  } else if (rows.length > 0) {
+    console.warn(
+      `[peace] partial financials for ${symbol} (income=${incomeOk} balance=${balanceOk} cashflow=${cashFlowOk}); not caching`,
+    );
   }
   return bundle;
 };

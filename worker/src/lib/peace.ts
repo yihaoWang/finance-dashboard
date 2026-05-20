@@ -149,34 +149,28 @@ const evalOpIncomeSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'p
 };
 
 const evalEpsSteady = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
+  // #4 純獲利性檢核：5 年 EPS 皆為正即過關。
+  // YoY 衰退另由 #7（5年 EPS 正成長、不衰退）負責，避免雙重扣分。
   const compactRows = rows.filter((r) => r.eps !== null);
   const vals = compactRows.map((r) => r.eps!);
   if (vals.length < 2) return { passed: null, value: null, detail: 'EPS 資料不足，無法評估' };
-  const allPos = allPositive(vals.map((v) => v));
-  const declined = hasDeclineBeyond(vals, 10);
-  const passed = allPos && !declined;
-  let detail: string;
-  if (!allPos) {
+  const passed = allPositive(vals);
+  if (!passed) {
     const negIdx = vals.findIndex((v) => v <= 0);
     const negYear = compactRows[negIdx]?.year;
-    detail = `${negYear ?? '某年'} EPS ${vals[negIdx]?.toFixed(2) ?? '—'} 跌至負值`;
-  } else if (declined) {
-    const worst = findWorstYoY(vals);
-    if (worst !== null) {
-      const worstYear = compactRows[worst.idx]?.year;
-      const worstVal = vals[worst.idx];
-      const worstPrev = vals[worst.idx - 1];
-      detail = `${worstYear ?? '某年'} EPS 從 ${worstPrev?.toFixed(2) ?? '—'} → ${worstVal?.toFixed(2) ?? '—'}，YoY ${pct(worst.yoy)}，超過 10% 衰退門檻`;
-    } else {
-      detail = 'EPS 存在單年衰退超過 10% 門檻';
-    }
-  } else {
-    const minEps = Math.min(...vals);
-    const minYear = compactRows[vals.indexOf(minEps)]?.year;
-    const worst = findWorstYoY(vals);
-    detail = `5年最低 EPS ${minEps.toFixed(2)} (${minYear ?? '—'})；最大 YoY ${worst !== null ? pct(worst.yoy) : '—'}，在 10% 容忍內`;
+    return {
+      passed,
+      value: lastValue(vals),
+      detail: `${negYear ?? '某年'} EPS ${vals[negIdx]?.toFixed(2) ?? '—'} 跌至負值`,
+    };
   }
-  return { passed, value: lastValue(vals), detail };
+  const minEps = Math.min(...vals);
+  const minYear = compactRows[vals.indexOf(minEps)]?.year;
+  return {
+    passed,
+    value: lastValue(vals),
+    detail: `5年皆獲利；最低 EPS ${minEps.toFixed(2)} (${minYear ?? '—'})`,
+  };
 };
 
 const evalRevenueCagr = (rows: AnnualFinancialRow[]): Pick<PeaceCriterion, 'passed' | 'value' | 'detail'> => {
@@ -412,6 +406,12 @@ export const computePeace = (
   wacc: number,
   moat: MoatCategory[],
   risk: RiskCategory[],
+  reasons: {
+    moatReasons?: Record<string, string>;
+    riskReasons?: Record<string, string>;
+    moatNote?: string | null;
+    riskNote?: string | null;
+  } = {},
 ): PeaceBundle => {
   const rows = data.rows;
 
@@ -444,9 +444,9 @@ export const computePeace = (
     {
       id: 4,
       group: 'P',
-      label: '5年 EPS 為正、不衰退',
+      label: '5年 EPS 皆為正',
       priority: true,
-      threshold: 'EPS > 0 & YoY ≥ -10%',
+      threshold: 'EPS > 0（5年皆獲利）',
       ...evalEpsSteady(rows),
     },
     // ── E 增長 ──────────────────────────────────────────────────────────────
@@ -564,6 +564,10 @@ export const computePeace = (
     criteria,
     moat,
     risk,
+    moatReasons: reasons.moatReasons ?? {},
+    riskReasons: reasons.riskReasons ?? {},
+    moatNote: reasons.moatNote ?? null,
+    riskNote: reasons.riskNote ?? null,
     wacc,
     computedAt: new Date().toISOString(),
   };

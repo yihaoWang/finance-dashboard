@@ -15,7 +15,7 @@ const PRESETS: Record<string, string> = {
 
 export const WatchlistStrip = ({ current, watchlist, onPick, onRemove }: Props) => (
   <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-4">
-    <span className="text-xs text-zinc-500 mr-2 shrink-0">自選</span>
+    <span className="text-xs text-slate-600 mr-2 shrink-0">自選</span>
     {watchlist.map((s) => {
       const isActive = current === s;
       return (
@@ -23,8 +23,8 @@ export const WatchlistStrip = ({ current, watchlist, onPick, onRemove }: Props) 
           key={s}
           className={`shrink-0 rounded-lg flex items-center border group transition-colors ${
             isActive
-              ? 'bg-accent/10 border-accent/40 text-zinc-100'
-              : 'bg-ink-800 border-ink-700 text-zinc-300 hover:border-ink-600'
+              ? 'bg-accent/10 border-accent/40 text-slate-900'
+              : 'bg-ink-800 border-ink-700 text-slate-700 hover:border-ink-600'
           }`}
         >
           <button
@@ -33,7 +33,7 @@ export const WatchlistStrip = ({ current, watchlist, onPick, onRemove }: Props) 
             className="pl-3 pr-2 py-1.5 text-sm flex items-center gap-2 cursor-pointer"
           >
             <span className="num font-medium">{s}</span>
-            <span className="text-xs text-zinc-500">{PRESETS[s] ?? ''}</span>
+            <span className="text-xs text-slate-600">{PRESETS[s] ?? ''}</span>
           </button>
           <button
             type="button"
@@ -43,7 +43,7 @@ export const WatchlistStrip = ({ current, watchlist, onPick, onRemove }: Props) 
             }}
             aria-label={`移除 ${s}`}
             title={`移除 ${s}`}
-            className="px-1.5 mr-1 text-zinc-500 hover:text-red-400 transition-colors rounded"
+            className="px-1.5 mr-1 text-slate-600 hover:text-red-400 transition-colors rounded"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

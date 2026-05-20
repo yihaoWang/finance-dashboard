@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '../lib/http';
+import { finMindToken } from '../lib/finmind-token';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 
 export type ChipDaily = {
@@ -123,7 +124,7 @@ export const fetchInstitutional5dDaily = async (
   opts: ChipsOpts = {},
 ): Promise<{ date: string; value: number }> => {
   const startDate = new Date(Date.now() - 14 * 86400_000).toISOString().slice(0, 10);
-  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalInstitutionalInvestors&start_date=${startDate}`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanStockTotalInstitutionalInvestors&start_date=${startDate}&token=${finMindToken()}`;
   let res: Response;
   try {
     res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } }, { fetcher: opts.fetcher });

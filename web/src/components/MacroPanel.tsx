@@ -33,17 +33,17 @@ const MacroCard = ({ label, value, unit, date, decimals }: CardData) => {
   const dateStr = formatDate(date);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-      <div className="text-xs text-slate-400">{label}</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+      <div className="text-xs text-slate-600">{label}</div>
       <div className="mt-1 flex items-baseline gap-1">
-        <span className={`text-2xl font-semibold ${hasValue ? 'text-slate-100' : 'text-slate-500'}`}>
+        <span className={`text-2xl font-semibold ${hasValue ? 'text-slate-900' : 'text-slate-600'}`}>
           {valueStr}
         </span>
         {hasValue && unit !== '' && (
-          <span className="text-xs text-slate-500">{unit}</span>
+          <span className="text-xs text-slate-600">{unit}</span>
         )}
       </div>
-      <div className="mt-1 text-[10px] text-slate-500">{dateStr}</div>
+      <div className="mt-1 text-[10px] text-slate-600">{dateStr}</div>
     </div>
   );
 };
@@ -96,8 +96,8 @@ export const MacroPanel = () => {
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-slate-100">美國重要總經指標</h2>
-        {isLoading && <span className="text-[11px] text-slate-500">載入中…</span>}
+        <h2 className="text-lg font-semibold text-slate-900">美國重要總經指標</h2>
+        {isLoading && <span className="text-[11px] text-slate-600">載入中…</span>}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {cards.map((card) => (

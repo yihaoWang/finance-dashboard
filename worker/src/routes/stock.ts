@@ -10,6 +10,7 @@ import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from '../sources/twse';
 import { fetchTwseChips } from '../sources/twse-chips';
 import { fetchTwseMargin, fetchTwseForeignHolding } from '../sources/twse-margin';
 import { fetchQuarterlyFinancials } from '../sources/finmind';
+import { fetchSharesOutstanding, fetchSymbolName } from '../sources/industry-pe';
 import { sma } from '../indicators/ma';
 import { deviation } from '../indicators/deviation';
 import { rsi } from '../indicators/rsi';
@@ -30,7 +31,7 @@ stock.get('/:symbol', async (c) => {
 
   const warnings: string[] = [];
 
-  const cacheKey = `quote:${symbol}`;
+  const cacheKey = `quote:v4:${symbol}`;
   const cached = await kvGetJson<{ value: StockBundle; ts: number }>(c.env.KV, cacheKey);
   if (cached) {
     const ageSeconds = Math.floor((Date.now() - cached.ts) / 1000);
@@ -149,17 +150,33 @@ stock.get('/:symbol', async (c) => {
   const derivedEps =
     twse?.pe && twse.pe > 0 && quote.price > 0 ? quote.price / twse.pe : null;
 
+  // Yahoo chart endpoint doesn't include marketCap. Derive from TWSE/TPEX 已發行普通股數 × current price.
+  let derivedMarketCap: number | null = null;
+  let chineseName: string | null = null;
+  try {
+    const [shares, nm] = await Promise.all([
+      fetchSharesOutstanding(c.env.KV, symbol),
+      fetchSymbolName(c.env.KV, symbol),
+    ]);
+    if (shares !== null && quote.price > 0) {
+      derivedMarketCap = shares * quote.price;
+    }
+    chineseName = nm;
+  } catch (err) {
+    console.warn('[stock] shares/name fetch failed', symbol, err);
+  }
+
   const bundle: StockBundle = {
     chips,
     history: priceHistory,
     quote: {
       symbol: quote.symbol,
-      name: twse?.name ?? quote.name,
+      name: twse?.name ?? chineseName ?? quote.name,
       price: quote.price,
       change: quote.change,
       changePct: quote.changePct,
       volume: quote.volume,
-      marketCap: quote.marketCap,
+      marketCap: quote.marketCap ?? derivedMarketCap,
       high52w: quote.high52w,
       low52w: quote.low52w,
       updatedAt: Date.now(),
