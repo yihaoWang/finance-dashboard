@@ -29,13 +29,22 @@ export const fetchYahooNews = async (
   symbol: string,
   opts: Opts = {},
 ): Promise<NewsItem[]> => {
-  const url = `https://tw.stock.yahoo.com/rss?s=${symbol}.TW`;
-  const res = await fetchWithRetry(
-    url,
-    { headers: { 'User-Agent': UA, Accept: 'application/rss+xml,application/xml;q=0.9,*/*;q=0.8' } },
-    { fetcher: opts.fetcher },
-  );
-  const xml = await res.text();
+  // Try .TW first (上市), then .TWO (上櫃). Yahoo RSS returns empty channel for wrong suffix.
+  const tryFetch = async (suffix: string): Promise<string> => {
+    const url = `https://tw.stock.yahoo.com/rss?s=${symbol}${suffix}`;
+    const res = await fetchWithRetry(
+      url,
+      { headers: { 'User-Agent': UA, Accept: 'application/rss+xml,application/xml;q=0.9,*/*;q=0.8' } },
+      { fetcher: opts.fetcher },
+    );
+    return res.text();
+  };
+  let xml = await tryFetch('.TW').catch(() => '');
+  // Heuristic: empty channel = wrong suffix. Yahoo returns valid RSS skeleton but no <item> entries.
+  if (!xml.includes('<item>') && !xml.includes('<item ')) {
+    const fallback = await tryFetch('.TWO').catch(() => '');
+    if (fallback.includes('<item')) xml = fallback;
+  }
 
   // First title/link belong to <channel>; the rest belong to items.
   const titles = matchAll(xml, TITLE_RE);

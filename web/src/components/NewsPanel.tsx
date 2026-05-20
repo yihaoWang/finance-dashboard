@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { SentimentT } from '@fd/shared';
 import { useNews } from '../hooks/useNews';
+import { SectionCard } from './SectionCard';
 
 type Props = { symbol: string };
 
@@ -37,9 +38,7 @@ export const NewsPanel = ({ symbol }: Props) => {
   const filtered = filter === 'all' ? items : items.filter((i) => i.sentiment === filter);
 
   return (
-    <section className="rounded-2xl bg-ink-900 border border-ink-700 p-5 mb-6">
-      <h2 className="font-medium text-zinc-100 mb-4">消息面（近 30 天）</h2>
-
+    <SectionCard title="消息面（近 30 天）" storageKey={`news:${symbol}`}>
       <div className="flex gap-2 flex-wrap mb-4">
         {(['all', 'positive', 'negative', 'neutral'] as FilterT[]).map((f) => {
           const label = f === 'all'
@@ -52,8 +51,8 @@ export const NewsPanel = ({ symbol }: Props) => {
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 filter === f
-                  ? 'bg-zinc-100 text-zinc-900'
-                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                  ? 'bg-slate-100 text-slate-900'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800'
               }`}
             >
               {label}
@@ -62,34 +61,34 @@ export const NewsPanel = ({ symbol }: Props) => {
         })}
       </div>
 
-      {isLoading && <p className="text-zinc-500 text-sm">載入中…</p>}
+      {isLoading && <p className="text-slate-600 text-sm">載入中…</p>}
 
       {!isLoading && filtered.length === 0 && (
-        <p className="text-zinc-500 text-sm">暫無資料</p>
+        <p className="text-slate-600 text-sm">暫無資料</p>
       )}
 
-      <ul className="divide-y divide-zinc-800 overflow-y-auto" style={{ maxHeight: 320 }}>
+      <ul className="divide-y divide-slate-200 overflow-y-auto" style={{ maxHeight: 320 }}>
         {filtered.map((item) => (
           <li key={item.link}>
             <a
               href={item.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-start gap-3 group py-3 -mx-2 px-2 rounded-lg hover:bg-zinc-800/50 transition-colors"
+              className="flex items-start gap-3 group py-3 -mx-2 px-2 rounded-lg hover:bg-slate-100/50 transition-colors"
             >
               <span
                 className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${SENTIMENT_DOT[item.sentiment]}`}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-zinc-100 group-hover:text-accent-soft group-hover:underline underline-offset-2 decoration-accent/40 line-clamp-2 leading-snug">
+                <p className="text-sm text-slate-900 group-hover:text-accent-soft group-hover:underline underline-offset-2 decoration-accent/40 line-clamp-2 leading-snug">
                   {item.title}
                 </p>
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   {item.publisher} · {ago(item.publishedAt)}
                 </p>
               </div>
               <svg
-                className="mt-1 flex-shrink-0 w-3.5 h-3.5 text-zinc-600 group-hover:text-accent-soft"
+                className="mt-1 flex-shrink-0 w-3.5 h-3.5 text-slate-500 group-hover:text-accent-soft"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -106,6 +105,6 @@ export const NewsPanel = ({ symbol }: Props) => {
           </li>
         ))}
       </ul>
-    </section>
+    </SectionCard>
   );
 };

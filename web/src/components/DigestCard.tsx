@@ -35,7 +35,7 @@ const DigestBody = ({ bundle, isFallback }: DigestBodyProps) => {
         <DigestSection sections={bundle.sections} />
       ) : (
         <div>
-          <p className="text-sm text-zinc-400 whitespace-pre-line">
+          <p className="text-sm text-slate-600 whitespace-pre-line">
             {fullText.slice(0, PREVIEW_CHARS)}…
           </p>
           <button
@@ -74,7 +74,7 @@ export const DigestCard = ({ symbol }: Props) => {
   if (!bundle) {
     if (stockQuery.isError && !isStockError) {
       return (
-        <div className="rounded-xl border border-ink-700 bg-ink-900 p-4 mb-6 text-sm text-zinc-500">
+        <div className="rounded-xl border border-ink-700 bg-ink-900 p-4 mb-6 text-sm text-slate-600">
           今日 AI 解讀暫時無法載入
         </div>
       );
@@ -87,9 +87,9 @@ export const DigestCard = ({ symbol }: Props) => {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">🤖</span>
-          <span className="font-semibold text-zinc-100 text-sm">今日 AI 解讀</span>
-          <span className="text-xs text-zinc-500">{formatDate(bundle.date)}</span>
-          <span className="text-xs text-zinc-500">{bundle.model}</span>
+          <span className="font-semibold text-slate-900 text-sm">今日 AI 解讀</span>
+          <span className="text-xs text-slate-600">{formatDate(bundle.date)}</span>
+          <span className="text-xs text-slate-600">{bundle.model}</span>
         </div>
         {freshness !== undefined && <FreshnessChip ageSeconds={freshness.ageSeconds} />}
       </div>

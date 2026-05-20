@@ -10,15 +10,15 @@ type Props = {
 };
 
 export const KpiCard = ({ label, value, unit, digits = 2, hint, hintTone = 'mute' }: Props) => (
-  <div className="rounded-xl bg-ink-900 border border-ink-700 p-4">
-    <div className="text-xs text-zinc-500 mb-1">{label}</div>
-    <div className="text-xl font-semibold num text-zinc-100">
+  <div className="rounded-xl bg-ink-900 border border-ink-700 shadow-sm p-4">
+    <div className="text-xs text-slate-600 mb-1">{label}</div>
+    <div className="text-xl font-semibold num text-slate-900">
       {value === null ? '—' : `${value.toFixed(digits)}${unit ?? ''}`}
     </div>
     {hint && (
       <div
         className={`text-[11px] mt-1 ${
-          hintTone === 'up' ? 'text-up' : hintTone === 'down' ? 'text-down' : 'text-zinc-500'
+          hintTone === 'up' ? 'text-up' : hintTone === 'down' ? 'text-down' : 'text-slate-600'
         }`}
       >
         {hint}

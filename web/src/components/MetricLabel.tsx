@@ -17,13 +17,13 @@ export const MetricLabel = ({ term, value, className }: Props) => {
         onMouseLeave={() => setOpen(false)}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="cursor-help inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-ink-700 text-[10px] text-zinc-400 hover:bg-accent hover:text-white transition">
+        <span className="cursor-help inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-ink-700 text-[10px] text-slate-600 hover:bg-accent hover:text-white transition">
           i
         </span>
         {open && (
-          <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 w-64 rounded-lg bg-ink-800 border border-ink-700 p-3 text-xs text-left shadow-xl">
-            <span className="block font-medium text-zinc-100 mb-1">{t.name}</span>
-            <span className="block text-zinc-400 mb-2 leading-relaxed">{t.definition}</span>
+          <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 w-64 rounded-lg bg-ink-800 border border-ink-700 shadow-sm p-3 text-xs text-left shadow-xl">
+            <span className="block font-medium text-slate-900 mb-1">{t.name}</span>
+            <span className="block text-slate-600 mb-2 leading-relaxed">{t.definition}</span>
             {interp && (
               <span className="block pt-2 border-t border-ink-700 text-accent-soft">
                 目前：{interp}

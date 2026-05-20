@@ -27,7 +27,7 @@ news.get('/:symbol', async (c) => {
   } catch {
     return c.json({ error: 'invalid_symbol' }, 400);
   }
-  const key = `news:${symbol}`;
+  const key = `news:v2:${symbol}`;
   const cached = await kvGetJson<{ value: NewsBundle; ts: number }>(c.env.KV, key);
   if (cached) {
     const ageSeconds = Math.floor((Date.now() - cached.ts) / 1000);

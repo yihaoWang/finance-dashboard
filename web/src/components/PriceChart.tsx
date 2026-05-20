@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
 import type { PricePoint } from '@fd/shared';
 import { useHistory } from '../hooks/useHistory';
+import { SectionCard } from './SectionCard';
 
 type Props = {
   symbol: string;
@@ -34,9 +35,11 @@ export const PriceChart = ({ symbol, price, high52w, low52w, defaultHistory }: P
   const pct = (price - lo) / (hi - lo);
 
   return (
-    <div className="rounded-2xl bg-ink-900 border border-ink-700 p-5 lg:col-span-2">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="font-medium text-zinc-100">股價走勢</h2>
+    <SectionCard
+      id="price"
+      storageKey="price"
+      title="股價走勢"
+      actions={
         <div className="flex gap-1 text-xs">
           {RANGES.map((r) => (
             <button
@@ -45,20 +48,20 @@ export const PriceChart = ({ symbol, price, high52w, low52w, defaultHistory }: P
               onClick={() => setRange(r.value)}
               className={`px-2 py-1 rounded ${
                 range === r.value
-                  ? 'text-zinc-100 bg-accent/20 border border-accent/40'
-                  : 'bg-ink-800 border border-ink-700 text-zinc-300'
+                  ? 'text-slate-900 bg-accent/20 border border-accent/40'
+                  : 'bg-ink-800 border border-ink-700 shadow-sm text-slate-700'
               }`}
             >
               {r.label}
             </button>
           ))}
         </div>
-      </div>
-
+      }
+    >
       <div className="relative">
         {isFetching && !isDefault && (
           <div className="absolute inset-0 flex items-center justify-center z-10 bg-ink-900/60 rounded-xl">
-            <span className="text-zinc-400 text-sm">更新中…</span>
+            <span className="text-slate-600 text-sm">更新中…</span>
           </div>
         )}
         {history.length >= 2 ? (
@@ -83,14 +86,14 @@ export const PriceChart = ({ symbol, price, high52w, low52w, defaultHistory }: P
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm bg-ink-800/40 rounded-xl border border-ink-700">
+          <div className="h-[200px] flex items-center justify-center text-slate-600 text-sm bg-ink-800/40 rounded-xl border border-ink-700">
             資料不足
           </div>
         )}
       </div>
 
       <div className="mt-4">
-        <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
+        <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
           <span>52W 低 {lo.toFixed(0)}</span>
           <span>現價 {price.toFixed(2)}</span>
           <span>52W 高 {hi.toFixed(0)}</span>
@@ -101,11 +104,11 @@ export const PriceChart = ({ symbol, price, high52w, low52w, defaultHistory }: P
             style={{ width: '100%', opacity: 0.5 }}
           />
           <div
-            className="absolute top-0 bottom-0 w-1 bg-zinc-100 rounded-full"
+            className="absolute top-0 bottom-0 w-1 bg-slate-100 rounded-full"
             style={{ left: `${Math.min(100, Math.max(0, pct * 100))}%`, transform: 'translateX(-50%)' }}
           />
         </div>
       </div>
-    </div>
+    </SectionCard>
   );
 };

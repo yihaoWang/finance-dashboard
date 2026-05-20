@@ -1,9 +1,8 @@
 import { useStock } from '../hooks/useStock';
+import { useValuation } from '../hooks/useValuation';
 import { Hero } from '../components/Hero';
-import { KpiGrid } from '../components/KpiGrid';
+import { PeacePanel } from '../components/PeacePanel';
 import { PriceChart } from '../components/PriceChart';
-import { MacroPanel } from '../components/MacroPanel';
-import { SentimentPanel } from '../components/SentimentPanel';
 import { AnalysisPanels } from '../components/AnalysisPanels';
 import { NewsPanel } from '../components/NewsPanel';
 
@@ -11,8 +10,9 @@ type Props = { symbol: string };
 
 export const StockDetail = ({ symbol }: Props) => {
   const { data, isLoading, error } = useStock(symbol);
+  const { data: valuationData } = useValuation(symbol);
 
-  if (isLoading) return <div className="text-zinc-500 p-6">載入中…</div>;
+  if (isLoading) return <div className="text-slate-600 p-6">載入中…</div>;
   if (error) return <div className="text-down p-6">錯誤：{(error as Error).message}</div>;
   if (!data) return null;
 
@@ -21,18 +21,10 @@ export const StockDetail = ({ symbol }: Props) => {
   return (
     <>
       <div id="overview" className="scroll-mt-24">
-        <Hero quote={quote} kpi={kpi} />
-        <KpiGrid kpi={kpi} />
+        <Hero quote={quote} kpi={kpi} valuation={valuationData?.data ?? null} />
       </div>
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
-        <div id="macro" className="scroll-mt-24">
-          <MacroPanel />
-        </div>
-      </section>
-      <div className="mb-6">
-        <SentimentPanel />
-      </div>
+      <PeacePanel symbol={symbol} />
+      <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
       <NewsPanel symbol={symbol} />
       {data.warnings && (

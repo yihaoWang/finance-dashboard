@@ -2,5 +2,5 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-ink-950 text-zinc-200; font-feature-settings: 'tnum'; }
+body { @apply bg-ink-950 text-slate-900; font-feature-settings: 'tnum'; }
 .num { font-variant-numeric: tabular-nums; }

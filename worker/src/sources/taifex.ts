@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '../lib/http';
+import { finMindToken } from '../lib/finmind-token';
 
 // FinMind dataset: TaiwanFuturesDaily
 // Aggregate open_interest by summing all contracts with futures_id="TX" for the latest date.
@@ -60,7 +61,7 @@ export const fetchForeignFuturesOI = async (): Promise<ForeignFuturesOI> => {
   // Fetch TX futures daily data; use total open_interest across near-month contracts
   // as a proxy for market-level futures positioning.
   const startDate = isoDateNDaysAgo(7);
-  const url = `${FINMIND_BASE}?dataset=TaiwanFuturesDaily&data_id=TX&start_date=${startDate}`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanFuturesDaily&data_id=TX&start_date=${startDate}&token=${finMindToken()}`;
   let res: Response;
   try {
     res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } });
@@ -93,7 +94,7 @@ export interface OptionsPCR {
 export const fetchOptionsPCR = async (): Promise<OptionsPCR> => {
   // Fetch TXO option daily data and compute PCR = put volume / call volume
   const startDate = isoDateNDaysAgo(7);
-  const url = `${FINMIND_BASE}?dataset=TaiwanOptionDaily&data_id=TXO&start_date=${startDate}`;
+  const url = `${FINMIND_BASE}?dataset=TaiwanOptionDaily&data_id=TXO&start_date=${startDate}&token=${finMindToken()}`;
   let res: Response;
   try {
     res = await fetchWithRetry(url, { headers: { Accept: 'application/json' } });

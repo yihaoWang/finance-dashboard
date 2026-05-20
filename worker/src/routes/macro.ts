@@ -3,6 +3,7 @@ import type { Env } from '../index';
 import type { ApiResponse, MacroBundle } from '@fd/shared';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 import { fetchMacroBundle } from '../sources/macro';
+import { fetchFredSnapshot } from '../sources/fred';
 
 const TTL = 3600;
 export const macro = new Hono<{ Bindings: Env }>();
@@ -13,7 +14,17 @@ macro.get('/', async (c) => {
     const ageSeconds = Math.floor((Date.now() - cached.ts) / 1000);
     return c.json({ data: cached.value, freshness: { source: 'kv', ageSeconds } } satisfies ApiResponse<MacroBundle>);
   }
-  const bundle = await fetchMacroBundle();
+
+  const [yahooBundle, fredSnapshot] = await Promise.allSettled([
+    fetchMacroBundle(),
+    fetchFredSnapshot(c.env),
+  ]);
+
+  const bundle: MacroBundle = {
+    ...(yahooBundle.status === 'fulfilled' ? yahooBundle.value : { us10y: null, vix: null, sox: null, dxy: null, twd: null }),
+    fred: fredSnapshot.status === 'fulfilled' ? fredSnapshot.value : undefined,
+  };
+
   await kvPutJson(c.env.KV, 'macro:summary', { value: bundle, ts: Date.now() }, TTL);
   return c.json({ data: bundle, freshness: { source: 'fetch', ageSeconds: 0 } } satisfies ApiResponse<MacroBundle>);
 });
