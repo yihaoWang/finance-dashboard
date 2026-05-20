@@ -14,7 +14,7 @@ import { getTags } from './cache/d1-tags';
 import { upsertScreenerScore } from './cache/d1-screener';
 import { fetchYahooQuote } from './sources/yahoo';
 import { fetchTwseBwibbu, fetchTwseMonthlyRevenue } from './sources/twse';
-import { fetchSharesOutstanding, fetchSymbolName, fetchUniverse } from './sources/industry-pe';
+import { fetchIndustryPe, fetchSharesOutstanding, fetchSymbolName, fetchUniverse } from './sources/industry-pe';
 import { deriveMetrics, buildScreenerOutput } from './lib/screener-score';
 import { setFinMindToken } from './lib/finmind-token';
 import type { IndicatorKey } from '@fd/shared';
@@ -23,7 +23,7 @@ const WACC_FALLBACK = 9.5;
 const WACC_PREMIUM = 5.0;
 
 const scanOne = async (env: Env, symbol: string, wacc: number, now: number): Promise<boolean> => {
-  const [financials, tags, quoteR, twseR, sharesR, revenueR, nameR] = await Promise.allSettled([
+  const [financials, tags, quoteR, twseR, sharesR, revenueR, nameR, industryR] = await Promise.allSettled([
     fetchFiveYearFinancials(env.KV, symbol),
     getTags(env.DB, symbol),
     fetchYahooQuote(symbol),
@@ -31,6 +31,7 @@ const scanOne = async (env: Env, symbol: string, wacc: number, now: number): Pro
     fetchSharesOutstanding(env.KV, symbol),
     fetchTwseMonthlyRevenue(env.KV, symbol),
     fetchSymbolName(env.KV, symbol),
+    fetchIndustryPe(env.KV, symbol),
   ]);
   if (financials.status !== 'fulfilled') return false; // no 5y financials → skip silently
   if (tags.status !== 'fulfilled') return false;
@@ -61,12 +62,14 @@ const scanOne = async (env: Env, symbol: string, wacc: number, now: number): Pro
   const name = twse?.name ?? tpexName ?? quote?.name ?? null;
   const monthlyRevYoy = revenue?.yoy ?? null;
 
+  const industryPe = industryR.status === 'fulfilled' ? industryR.value.averagePe : null;
   const metrics = deriveMetrics(financials.value, {
     currentPe,
     marketCap,
     name,
     yieldPct,
     monthlyRevYoy,
+    industryPe,
   });
   const out = buildScreenerOutput(bundle, metrics);
 

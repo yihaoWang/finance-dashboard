@@ -4,11 +4,14 @@ import type {
   PeaceBundle,
   StyleTag,
 } from '@fd/shared';
+import { computeValuationGate } from '@fd/shared/valuation-gate';
 
 export type ScreenerMetrics = {
   currentPe: number | null;
   pe5yAvg: number | null;
   pePremium: number | null;        // (currentPe / pe5yAvg) - 1
+  industryPe: number | null;       // peer median, self-excluded
+  peg: number | null;              // currentPe / epsCagr (positive growth only)
   yieldPct: number | null;
   roe5yMin: number | null;
   epsCagr: number | null;          // percent
@@ -54,6 +57,7 @@ export const deriveMetrics = (
     name: string | null;
     yieldPct: number | null;
     monthlyRevYoy: number | null;
+    industryPe: number | null;
   },
 ): ScreenerMetrics => {
   const rows = financials.rows;
@@ -88,10 +92,18 @@ export const deriveMetrics = (
   const netMargin = latest && safeDiv(latest.netIncome, latest.revenue);
   const deRatio = latest && safeDiv(latest.totalDebt, latest.totalEquity);
 
+  // PEG: PE / annual EPS growth %. Only meaningful when growth is positive.
+  const peg =
+    extras.currentPe !== null && epsCagr !== null && epsCagr > 0
+      ? extras.currentPe / epsCagr
+      : null;
+
   return {
     currentPe: extras.currentPe,
     pe5yAvg,
     pePremium,
+    industryPe: extras.industryPe,
+    peg,
     yieldPct: extras.yieldPct,
     roe5yMin,
     epsCagr,
@@ -130,6 +142,17 @@ export const computeWeightedScore = (peace: PeaceBundle, metrics: ScreenerMetric
     else if (metrics.pePremium > 0.5) score -= 2;   // > 1.5× average
   }
 
+  // Valuation gate: large penalties for peer-relative overpricing so a great
+  // company with a 150-PE doesn't outrank a fairly-priced peer.
+  const gate = computeValuationGate({
+    currentPe: metrics.currentPe,
+    industryPe: metrics.industryPe,
+    pe5yAvg: metrics.pe5yAvg,
+    peg: metrics.peg,
+  });
+  if (gate.severity === 2) score -= 15;             // effectively ejects from buy list
+  else if (gate.severity === 1) score -= 5;
+
   if (metrics.roe5yMin !== null) {
     if (metrics.roe5yMin > 20) score += 2;
     else if (metrics.roe5yMin > 15) score += 1;
@@ -145,13 +168,20 @@ export const classifyTags = (
 ): StyleTag[] => {
   const tags: StyleTag[] = [];
 
-  // Value: high score, below-avg PE
+  // Value: high score, below-avg PE — but never tag as value when gate flags overvalued
+  const gate = computeValuationGate({
+    currentPe: metrics.currentPe,
+    industryPe: metrics.industryPe,
+    pe5yAvg: metrics.pe5yAvg,
+    peg: metrics.peg,
+  });
   const peg = peace.criteria.find((c) => c.id === 13)?.value ?? null;
   if (
     weightedScore >= 18 &&
     metrics.pePremium !== null &&
     metrics.pePremium < -0.1 &&
-    (peg === null || peg < 1.5)
+    (peg === null || peg < 1.5) &&
+    gate.severity === 0
   ) {
     tags.push('value');
   }
@@ -218,7 +248,17 @@ export const deriveConcerns = (peace: PeaceBundle, metrics: ScreenerMetrics): st
   if (peace.risk.length > 0) {
     out.push(`${peace.risk.length} 項風險：${peace.risk.join('、')}`);
   }
-  if (metrics.pePremium !== null && metrics.pePremium > 0.5) {
+  // Peer-relative valuation gate (industry → 5Y avg → PEG). Surfaces the
+  // primary overvaluation concern with the exact ratio that triggered it.
+  const gate = computeValuationGate({
+    currentPe: metrics.currentPe,
+    industryPe: metrics.industryPe,
+    pe5yAvg: metrics.pe5yAvg,
+    peg: metrics.peg,
+  });
+  if (gate.severity > 0 && gate.note !== null) {
+    out.push(gate.note);
+  } else if (metrics.pePremium !== null && metrics.pePremium > 0.5) {
     out.push(`目前 PE 比 5 年均值高 ${(metrics.pePremium * 100).toFixed(0)}% — 估值偏貴`);
   }
   if (metrics.deRatio !== null && metrics.deRatio > 1) {

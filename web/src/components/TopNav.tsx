@@ -79,6 +79,13 @@ export const TopNav = ({ onAddSymbol }: Props) => {
             </svg>
           </form>
         </div>
+        <a
+          href="/cdn-cgi/access/logout"
+          className="ml-auto text-xs text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-md hover:bg-ink-800 whitespace-nowrap"
+          title="登出"
+        >
+          登出
+        </a>
       </div>
     </header>
   );

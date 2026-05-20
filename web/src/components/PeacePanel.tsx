@@ -4,6 +4,7 @@ import { usePeace } from '../hooks/usePeace';
 import { useValuation } from '../hooks/useValuation';
 import { postPeaceTags } from '../lib/api';
 import type { MoatCategory, PeaceBundle, PeaceCriterion, RiskCategory, ValuationBundle } from '@fd/shared';
+import { computeValuationGate } from '@fd/shared/valuation-gate';
 import { SectionCard } from './SectionCard';
 
 const ALL_MOAT: MoatCategory[] = ['無形資產', '成本優勢', '網路效應', '高轉換成本', '有效規模'];
@@ -145,7 +146,10 @@ const GROUP_DISPLAY: Record<string, string> = {
   E2: 'E 效率',
 };
 
-const buildDecision = (bundle: PeaceBundle): DecisionDetail => {
+const buildDecision = (
+  bundle: PeaceBundle,
+  valuation: ValuationBundle | null = null,
+): DecisionDetail => {
   const { score, total, priorityScore, criteria, moat, risk } = bundle;
 
   const groupScores = GROUP_KEYS.map((g) => {
@@ -195,6 +199,28 @@ const buildDecision = (bundle: PeaceBundle): DecisionDetail => {
     rationale =
       `總分僅 ${score}/${total}，核心過關項僅 ${priorityScore}/6，基本面偏弱不建議介入。` +
       (riskCount > 0 ? `另有 ${riskCount} 項風險。` : '');
+  }
+
+  // Valuation override — applies after PEACE quality verdict.
+  // Strong PEACE + extreme PE means the market has overpriced the quality;
+  // we downgrade rather than blindly recommend buy.
+  const override = computeValuationGate({
+    currentPe: valuation?.currentPe ?? null,
+    industryPe: valuation?.industryPe ?? null,
+    pe5yAvg: valuation?.pe5yAvg ?? null,
+    peg: valuation?.peg ?? null,
+  });
+  if (override.downgrade === 'fail' && verdict !== 'fail') {
+    label = '不碰';
+    verdict = 'fail';
+    rationale = `${rationale} ${override.note}。`;
+  } else if (override.downgrade === 'watch' && verdict === 'pass') {
+    label = '觀望';
+    verdict = 'watch';
+    rationale = `${rationale} ${override.note}。`;
+  } else if (override.note !== null) {
+    // Note about missing valuation data (not a downgrade)
+    rationale = `${rationale} ${override.note}。`;
   }
 
   return {
@@ -395,7 +421,7 @@ export const PeacePanel = ({ symbol }: Props) => {
   if (!data) return null;
 
   const bundle = data.data;
-  const decision = buildDecision(bundle);
+  const decision = buildDecision(bundle, valuationData?.data ?? null);
 
   const criteriaByGroup = (g: string) => bundle.criteria.filter((c) => c.group === g);
 

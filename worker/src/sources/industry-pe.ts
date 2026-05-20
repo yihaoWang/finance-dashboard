@@ -7,7 +7,8 @@ import { kvGetJson, kvPutJson } from '../cache/kv';
 //   TPEX peratio_analysis — per-stock PE/PB/yield for OTC (上櫃)
 //   TPEX t187ap03_O      — company info incl. SecuritiesIndustryCode for OTC
 
-const KV_KEY = 'industry-pe:map:v8';
+const KV_KEY = 'industry-pe:map:v9';
+const MIN_PEERS = 5;
 const TTL = 12 * 3600;
 
 type TwsePe = { Code: string; PEratio: string };
@@ -30,8 +31,11 @@ type TpexInfo = {
 type IndustryMap = {
   // symbol → industry key (namespaced "tw:01" / "tp:33")
   symbolIndustry: Record<string, string>;
-  // industry key → { averagePe, peerCount, industryCode }
-  industryAvg: Record<string, { averagePe: number; peerCount: number; industryCode: string }>;
+  // symbol → its own PE (so we can exclude self from peer aggregation)
+  symbolPe: Record<string, number>;
+  // industry key → { medianPe, peerCount, industryCode, pes }
+  // pes: raw sorted PE values, kept for live exclude-self median recomputation
+  industryAvg: Record<string, { medianPe: number; peerCount: number; industryCode: string; pes: number[] }>;
   // market median PE (more robust than mean against tail outliers)
   marketPe: { tw: number | null; tp: number | null };
   // symbol → outstanding common shares (for market-cap computation)
@@ -84,6 +88,7 @@ const buildMap = async (): Promise<IndustryMap> => {
   const tpexInfo = unwrap(settled[3] as PromiseSettledResult<TpexInfo[]>, 'tpex_t187ap03_O');
 
   const symbolIndustry: Record<string, string> = {};
+  const symbolPe: Record<string, number> = {};
   const symbolShares: Record<string, number> = {};
   const symbolName: Record<string, string> = {};
   // industry key → list of PE values
@@ -112,6 +117,7 @@ const buildMap = async (): Promise<IndustryMap> => {
     symbolIndustry[r.Code] = key;
     const pe = parsePe(r.PEratio);
     if (pe !== null) {
+      symbolPe[r.Code] = pe;
       const bucket = buckets[key] ?? (buckets[key] = { code: ind, values: [] });
       bucket.values.push(pe);
       twAllPe.push(pe);
@@ -138,6 +144,7 @@ const buildMap = async (): Promise<IndustryMap> => {
     symbolIndustry[r.SecuritiesCompanyCode] = key;
     const pe = parsePe(r.PriceEarningRatio);
     if (pe !== null) {
+      symbolPe[r.SecuritiesCompanyCode] = pe;
       const bucket = buckets[key] ?? (buckets[key] = { code: ind, values: [] });
       bucket.values.push(pe);
       tpAllPe.push(pe);
@@ -147,12 +154,14 @@ const buildMap = async (): Promise<IndustryMap> => {
   const industryAvg: IndustryMap['industryAvg'] = {};
   for (const [key, { code, values }] of Object.entries(buckets)) {
     if (values.length === 0) continue;
-    const avg = values.reduce((s, x) => s + x, 0) / values.length;
-    industryAvg[key] = { averagePe: avg, peerCount: values.length, industryCode: code };
+    const sorted = [...values].sort((a, b) => a - b);
+    const med = median(sorted)!;
+    industryAvg[key] = { medianPe: med, peerCount: sorted.length, industryCode: code, pes: sorted };
   }
 
   return {
     symbolIndustry,
+    symbolPe,
     industryAvg,
     marketPe: { tw: median(twAllPe), tp: median(tpAllPe) },
     symbolShares,
@@ -231,5 +240,18 @@ export const fetchIndustryPe = async (
   if (!key) return { industry: null, averagePe: null, peerCount: 0 };
   const entry = map.industryAvg[key];
   if (!entry) return { industry: key, averagePe: null, peerCount: 0 };
-  return { industry: key, averagePe: entry.averagePe, peerCount: entry.peerCount };
+
+  // Exclude the queried symbol's own PE so the peer benchmark isn't self-referential.
+  // Especially important for small buckets where one outlier (e.g. PE 150) would
+  // otherwise inflate its own peer median.
+  const selfPe = map.symbolPe[symbol];
+  let peers = entry.pes;
+  if (selfPe !== undefined) {
+    const idx = peers.indexOf(selfPe);
+    if (idx >= 0) peers = peers.slice(0, idx).concat(peers.slice(idx + 1));
+  }
+  if (peers.length < MIN_PEERS) {
+    return { industry: key, averagePe: null, peerCount: peers.length };
+  }
+  return { industry: key, averagePe: median(peers), peerCount: peers.length };
 };
