@@ -288,6 +288,30 @@ export interface ValuationBundle {
   computedAt: number;
 }
 
+export type ValuationVerdict = '便宜' | '合理偏低' | '合理偏高' | '昂貴';
+
+export interface ValuationMethodResult {
+  method: 'ROE' | 'EPS' | '股利' | '淨值';
+  low: number;
+  high: number;
+  confidence: number;        // 0..1
+  verdict: ValuationVerdict;
+  note: string | null;       // brief explanation of inputs
+}
+
+export interface ValuationGauge {
+  symbol: string;
+  price: number;
+  methods: ValuationMethodResult[];
+  composite: {
+    low: number;
+    high: number;
+    confidence: number;
+    verdict: ValuationVerdict;
+  };
+  computedAt: number;
+}
+
 export type StyleTag = 'value' | 'growth' | 'dividend' | 'hiddenChampion' | 'momentum';
 
 export interface ScreenerRow {

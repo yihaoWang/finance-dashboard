@@ -1,11 +1,19 @@
 import { Hono } from 'hono';
 import type { Env } from '../index';
-import type { ApiResponse, ValuationBundle } from '@fd/shared';
+import type { ApiResponse, ValuationBundle, ValuationGauge } from '@fd/shared';
 import { kvGetJson, kvPutJson } from '../cache/kv';
 import { fetchYahooKeyStats } from '../sources/yahoo-quotesummary';
 import { fetchYahooHistory } from '../sources/yahoo';
 import { fetchFiveYearFinancials } from '../sources/finmind';
 import { fetchIndustryPe, fetchMarketPe } from '../sources/industry-pe';
+import { fetchTwseBwibbu } from '../sources/twse';
+import {
+  roeValuation,
+  epsValuation,
+  dividendValuation,
+  bookValuation,
+  compositeValuation,
+} from '../lib/valuation-models';
 
 const KV_PREFIX = 'valuation:v2:';
 const TTL = 6 * 3600;
@@ -112,4 +120,68 @@ valuation.get('/:symbol', async (c) => {
 
   await kvPutJson(c.env.KV, cacheKey, bundle, TTL);
   return c.json({ data: bundle, freshness: { source: 'fetch', ageSeconds: 0 } } satisfies ApiResponse<ValuationBundle>);
+});
+
+const GAUGE_KV_PREFIX = 'valuation:gauge:v1:';
+
+valuation.get('/gauge/:symbol', async (c) => {
+  const symbol = c.req.param('symbol');
+  const cacheKey = `${GAUGE_KV_PREFIX}${symbol}`;
+  const cached = await kvGetJson<ValuationGauge>(c.env.KV, cacheKey);
+  if (cached !== null) {
+    return c.json({ data: cached, freshness: { source: 'kv', ageSeconds: 0 } } satisfies ApiResponse<ValuationGauge>);
+  }
+
+  const [historyR, financialsR, industryR, bwibbuR] = await Promise.allSettled([
+    fetchYahooHistory(symbol, '5y'),
+    fetchFiveYearFinancials(c.env.KV, symbol),
+    fetchIndustryPe(c.env.KV, symbol),
+    fetchTwseBwibbu(c.env.KV, symbol),
+  ]);
+
+  const history = historyR.status === 'fulfilled' ? historyR.value : [];
+  const financials = financialsR.status === 'fulfilled' ? financialsR.value : null;
+  const industry = industryR.status === 'fulfilled' ? industryR.value : { industry: null, averagePe: null, peerCount: 0 };
+  const bwibbu = bwibbuR.status === 'fulfilled' ? bwibbuR.value : null;
+
+  if (!financials || financials.rows.length === 0 || history.length === 0) {
+    return c.json({ error: 'insufficient_data' }, 404);
+  }
+
+  const price = history[history.length - 1]!.close;
+  const rows = financials.rows;
+
+  // self 5y PE band (year-end close / annual EPS)
+  const self5yPes: number[] = [];
+  for (const row of rows) {
+    if (row.eps === null || row.eps <= 0) continue;
+    const inYear = history.filter((p) => p.date <= `${row.year}-12-31` && p.date >= `${row.year}-01-01`);
+    const last = inYear[inYear.length - 1];
+    if (last && last.close > 0) self5yPes.push(last.close / row.eps);
+  }
+
+  // cash dividend: derive from current price × yield (bwibbu gives current yield %)
+  const cashDividend =
+    bwibbu?.dividendYield !== null && bwibbu?.dividendYield !== undefined && bwibbu.dividendYield > 0
+      ? (price * bwibbu.dividendYield) / 100
+      : null;
+  const currentYieldDecimal =
+    bwibbu?.dividendYield !== null && bwibbu?.dividendYield !== undefined
+      ? bwibbu.dividendYield / 100
+      : null;
+
+  const methods = [
+    roeValuation(rows, price),
+    epsValuation(rows, price, industry.averagePe, industry.peerCount, self5yPes),
+    dividendValuation(cashDividend, currentYieldDecimal, price),
+    bookValuation(rows, price, bwibbu?.pb ?? null),
+  ].filter((m): m is NonNullable<typeof m> => m !== null);
+
+  if (methods.length === 0) {
+    return c.json({ error: 'no_valid_method' }, 404);
+  }
+
+  const gauge = compositeValuation(symbol, price, methods);
+  await kvPutJson(c.env.KV, cacheKey, gauge, TTL);
+  return c.json({ data: gauge, freshness: { source: 'fetch', ageSeconds: 0 } } satisfies ApiResponse<ValuationGauge>);
 });

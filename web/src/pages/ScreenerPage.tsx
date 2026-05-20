@@ -43,23 +43,23 @@ const GROUPS: Group[] = [
     key: 'moat',
     title: '護城河（必須具備）',
     mode: 'moat',
-    items: MOATS.map((m, i) => ({ id: m, label: `${i + 1}. ${m}` })),
+    items: MOATS.map((m) => ({ id: m, label: m })),
   },
   {
     key: 'risk',
     title: '風險（必須沒有）',
     mode: 'risk',
-    items: RISKS.map((r, i) => ({ id: r, label: `${i + 6}. ${r}` })),
+    items: RISKS.map((r) => ({ id: r, label: r })),
   },
   {
     key: 'P',
     title: 'P 盈利',
     mode: 'criterion',
     items: [
-      { id: '1', label: '#1 5年總營收正成長、不衰退' },
-      { id: '2', label: '#2 5年毛利率正成長/維持、不衰退' },
-      { id: '3', label: '#3 5年營業利益為正、不衰退' },
-      { id: '4', label: '#4 5年 EPS 皆為正' },
+      { id: '1', label: '5年總營收正成長、不衰退' },
+      { id: '2', label: '5年毛利率正成長/維持、不衰退' },
+      { id: '3', label: '5年營業利益為正、不衰退' },
+      { id: '4', label: '5年 EPS 皆為正' },
     ],
   },
   {
@@ -67,9 +67,9 @@ const GROUPS: Group[] = [
     title: 'E 增長',
     mode: 'criterion',
     items: [
-      { id: '5', label: '#5 5年總營收正成長' },
-      { id: '6', label: '#6 5年營業利益正成長、不衰退' },
-      { id: '7', label: '#7 5年 EPS 正成長、不衰退' },
+      { id: '5', label: '5年總營收正成長' },
+      { id: '6', label: '5年營業利益正成長、不衰退' },
+      { id: '7', label: '5年 EPS 正成長、不衰退' },
     ],
   },
   {
@@ -77,9 +77,9 @@ const GROUPS: Group[] = [
     title: 'A 現金',
     mode: 'criterion',
     items: [
-      { id: '8', label: '#8 營運/自由現金流持續增加且為正' },
-      { id: '9', label: '#9 營運現金流 > 融資 + 投資現金流' },
-      { id: '10', label: '#10 收益質量 OCF/淨利 > 0.8' },
+      { id: '8', label: '營運/自由現金流持續增加且為正' },
+      { id: '9', label: '營運現金流 > 融資 + 投資現金流' },
+      { id: '10', label: '收益質量 OCF/淨利 > 0.8' },
     ],
   },
   {
@@ -87,9 +87,9 @@ const GROUPS: Group[] = [
     title: 'C 保守與安全',
     mode: 'criterion',
     items: [
-      { id: '11', label: '#11 D/E ratio < 0.5' },
-      { id: '12', label: '#12 流動比率 > 100%' },
-      { id: '13', label: '#13 長期負債 / 淨利 < 4' },
+      { id: '11', label: 'D/E ratio < 0.5' },
+      { id: '12', label: '流動比率 > 100%' },
+      { id: '13', label: '長期負債 / 淨利 < 4' },
     ],
   },
   {
@@ -97,9 +97,9 @@ const GROUPS: Group[] = [
     title: 'E 效率與經營能力',
     mode: 'criterion',
     items: [
-      { id: '14', label: '#14 5年 ROE > 15%' },
-      { id: '15', label: '#15 Asset Turnover > 同行平均' },
-      { id: '16', label: '#16 ROIC > WACC' },
+      { id: '14', label: '5年 ROE > 15%' },
+      { id: '15', label: 'Asset Turnover > 同行平均' },
+      { id: '16', label: 'ROIC > WACC' },
     ],
   },
   {

@@ -5,6 +5,7 @@ import { PeacePanel } from '../components/PeacePanel';
 import { PriceChart } from '../components/PriceChart';
 import { AnalysisPanels } from '../components/AnalysisPanels';
 import { NewsPanel } from '../components/NewsPanel';
+import { ValuationGaugePanel } from '../components/ValuationGaugePanel';
 
 type Props = { symbol: string };
 
@@ -23,9 +24,10 @@ export const StockDetail = ({ symbol }: Props) => {
       <div id="overview" className="scroll-mt-24">
         <Hero quote={quote} kpi={kpi} valuation={valuationData?.data ?? null} />
       </div>
-      <PeacePanel symbol={symbol} />
       <PriceChart symbol={symbol} price={quote.price} high52w={quote.high52w} low52w={quote.low52w} defaultHistory={history} />
       <AnalysisPanels kpi={kpi} quote={quote} chips={chips} />
+      <ValuationGaugePanel symbol={symbol} />
+      <PeacePanel symbol={symbol} />
       <NewsPanel symbol={symbol} />
       {data.warnings && (
         <div className="mt-3 text-xs text-amber-400">注意：{data.warnings.join(', ')}</div>

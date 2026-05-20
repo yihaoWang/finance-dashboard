@@ -468,7 +468,7 @@ export const PeacePanel = ({ symbol }: Props) => {
   return (
     <>
     <SectionCard
-      title="好公司分析"
+      title="企業體質檢核"
       subtitle={symbol}
       storageKey="peace"
       bodyPadding="none"

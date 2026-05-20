@@ -1,4 +1,4 @@
-import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PeaceBundle, PricePoint, ScreenerBundle, SentimentBundle, StockBundle, ValuationBundle } from '@fd/shared';
+import type { ApiResponse, DigestBundle, DigestHistoryItem, FinancialsBundle, MacroBundle, NewsBundle, PeaceBundle, PricePoint, ScreenerBundle, SentimentBundle, StockBundle, ValuationBundle, ValuationGauge } from '@fd/shared';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -86,4 +86,10 @@ export const fetchValuation = async (symbol: string): Promise<ApiResponse<Valuat
   const res = await fetch(`${API_BASE}/api/valuation/${encodeURIComponent(symbol)}`);
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<ValuationBundle>>;
+};
+
+export const fetchValuationGauge = async (symbol: string): Promise<ApiResponse<ValuationGauge>> => {
+  const res = await fetch(`${API_BASE}/api/valuation/gauge/${encodeURIComponent(symbol)}`);
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<ApiResponse<ValuationGauge>>;
 };
