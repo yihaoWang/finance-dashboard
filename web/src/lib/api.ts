@@ -100,3 +100,29 @@ export const fetchValuationGauge = async (symbol: string): Promise<ApiResponse<V
   if (!res.ok) throw new Error(`api_error_${res.status}`);
   return res.json() as Promise<ApiResponse<ValuationGauge>>;
 };
+
+export type UserPrefs = { email: string | null; watchlist: string[]; recents: string[] };
+
+export const fetchUserPrefs = async (): Promise<UserPrefs> => {
+  const res = await apiFetch('/api/prefs');
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<UserPrefs>;
+};
+
+export const fetchStockNames = async (symbols: string[]): Promise<Record<string, string>> => {
+  if (symbols.length === 0) return {};
+  const res = await apiFetch(`/api/prefs/names?symbols=${encodeURIComponent(symbols.join(','))}`);
+  if (!res.ok) return {};
+  const json = (await res.json()) as { names?: Record<string, string> };
+  return json.names ?? {};
+};
+
+export const saveUserPrefs = async (body: { watchlist: string[]; recents: string[] }): Promise<UserPrefs> => {
+  const res = await apiFetch('/api/prefs', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`api_error_${res.status}`);
+  return res.json() as Promise<UserPrefs>;
+};

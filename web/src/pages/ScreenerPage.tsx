@@ -4,10 +4,9 @@ import { TopNav } from '../components/TopNav';
 import { useScreener } from '../hooks/useScreener';
 import type { ScreenerRow, StyleTag } from '@fd/shared';
 
-type Props = {
-  watchlist: string[];
-  setWatchlist: (v: string[]) => void;
-};
+import type { UseUserPrefs } from '../hooks/useUserPrefs';
+
+type Props = { prefs: UseUserPrefs };
 
 // ───── Filter shape ─────
 type SortKey = 'weighted' | 'priority' | 'pe' | 'yield' | 'roe' | 'eps_cagr';
@@ -350,7 +349,7 @@ const ResultCard = ({ row }: { row: ScreenerRow }) => {
 };
 
 // ───── Main page ─────
-export const ScreenerPage = ({ watchlist, setWatchlist }: Props) => {
+export const ScreenerPage = ({ prefs }: Props) => {
   const { data, isLoading, error } = useScreener();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
 
@@ -386,7 +385,7 @@ export const ScreenerPage = ({ watchlist, setWatchlist }: Props) => {
 
   return (
     <div>
-      <TopNav watchlist={watchlist} setWatchlist={setWatchlist} />
+      <TopNav onAddSymbol={prefs.addToWatchlist} />
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <header className="mb-6 flex items-end justify-between flex-wrap gap-3">
           <div>

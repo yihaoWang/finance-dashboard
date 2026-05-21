@@ -2,15 +2,13 @@ import { TopNav } from '../components/TopNav';
 import { DigestCard } from '../components/DigestCard';
 import { SentimentPanel } from '../components/SentimentPanel';
 import { MacroPanel } from '../components/MacroPanel';
+import type { UseUserPrefs } from '../hooks/useUserPrefs';
 
-type Props = {
-  watchlist: string[];
-  setWatchlist: (v: string[]) => void;
-};
+type Props = { prefs: UseUserPrefs };
 
-export const MarketOverviewPage = ({ watchlist, setWatchlist }: Props) => (
+export const MarketOverviewPage = ({ prefs }: Props) => (
   <div>
-    <TopNav watchlist={watchlist} setWatchlist={setWatchlist} />
+    <TopNav onAddSymbol={prefs.addToWatchlist} />
     <main className="max-w-[1400px] mx-auto px-6 py-6">
       <MacroPanel />
       <DigestCard symbol="market" />

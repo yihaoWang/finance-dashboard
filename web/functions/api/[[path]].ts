@@ -24,6 +24,16 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
   // Strip browser hop-by-hop headers that confuse upstream
   headers.delete('host');
 
+  // Prevent the browser from spoofing the end-user identity header.
+  headers.delete('x-end-user-email');
+  // When the worker is hit via service token, CF Access replaces the
+  // user-identity headers with the service token's identity. Capture the
+  // real end-user email that Pages-side CF Access put on this request and
+  // forward it under a custom header the worker trusts (only because the
+  // service token gate already authenticated us as Pages → worker).
+  const endUserEmail = request.headers.get('Cf-Access-Authenticated-User-Email');
+  if (endUserEmail) headers.set('X-End-User-Email', endUserEmail);
+
   const upstream = await fetch(target.toString(), {
     method: request.method,
     headers,

@@ -1,53 +1,21 @@
-import { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { MarketOverviewPage } from './pages/MarketOverviewPage';
 import { StockDetailPage } from './pages/StockDetailPage';
 import { FinancialsPage } from './pages/FinancialsPage';
 import { DigestHistory } from './pages/DigestHistory';
 import { ScreenerPage } from './pages/ScreenerPage';
-
-const STORAGE_KEY = 'fd:watchlist';
-const DEFAULT_WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
-
-const loadWatchlist = (): string[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_WATCHLIST;
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string')) return parsed;
-    return DEFAULT_WATCHLIST;
-  } catch (err) {
-    console.warn('failed to load watchlist', err);
-    return DEFAULT_WATCHLIST;
-  }
-};
+import { useUserPrefs } from './hooks/useUserPrefs';
 
 export const App = () => {
-  const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
-
-  useEffect(() => {
-    setWatchlist(loadWatchlist());
-  }, []);
+  const prefs = useUserPrefs();
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<MarketOverviewPage watchlist={watchlist} setWatchlist={setWatchlist} />}
-      />
-      <Route
-        path="/stock"
-        element={<StockDetailPage watchlist={watchlist} setWatchlist={setWatchlist} />}
-      />
-      <Route path="/digest" element={<DigestHistory watchlist={watchlist} />} />
-      <Route
-        path="/financials"
-        element={<FinancialsPage watchlist={watchlist} setWatchlist={setWatchlist} />}
-      />
-      <Route
-        path="/screener"
-        element={<ScreenerPage watchlist={watchlist} setWatchlist={setWatchlist} />}
-      />
+      <Route path="/" element={<MarketOverviewPage prefs={prefs} />} />
+      <Route path="/stock" element={<StockDetailPage prefs={prefs} />} />
+      <Route path="/digest" element={<DigestHistory watchlist={prefs.watchlist} />} />
+      <Route path="/financials" element={<FinancialsPage prefs={prefs} />} />
+      <Route path="/screener" element={<ScreenerPage prefs={prefs} />} />
     </Routes>
   );
 };

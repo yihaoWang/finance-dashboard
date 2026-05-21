@@ -13,6 +13,7 @@ import { sentiment } from './routes/sentiment';
 import { peace } from './routes/peace';
 import { screener } from './routes/screener';
 import { valuation } from './routes/valuation';
+import { prefs } from './routes/prefs';
 import { scheduled } from './cron';
 import { insertDailyValue } from './cache/d1-sentiment';
 import { runSentimentDaily, runScreenerScan, rescoreSymbols } from './cron';
@@ -65,6 +66,7 @@ app.route('/api/sentiment', sentiment);
 app.route('/api/peace', peace);
 app.route('/api/screener', screener);
 app.route('/api/valuation', valuation);
+app.route('/api/prefs', prefs);
 
 app.post('/api/admin/sentiment-backfill', async (c) => {
   const auth = c.req.header('authorization');

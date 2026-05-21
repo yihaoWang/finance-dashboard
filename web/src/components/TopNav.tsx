@@ -9,8 +9,6 @@ const NAV_LINKS: { path: string; label: string }[] = [
 ];
 
 type Props = {
-  watchlist?: string[];
-  setWatchlist?: (v: string[]) => void;
   onAddSymbol?: (symbol: string) => void;
 };
 

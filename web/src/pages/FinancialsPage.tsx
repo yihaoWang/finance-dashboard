@@ -5,9 +5,7 @@ import { WatchlistStrip } from '../components/WatchlistStrip';
 import { useFinancials } from '../hooks/useFinancials';
 import { mopsLinks } from '../lib/mops';
 import type { QuarterRow } from '@fd/shared';
-
-const STORAGE_KEY = 'fd:watchlist';
-const DEFAULT_WATCHLIST = ['2330', '2454', '2317', '3008', '2308'];
+import type { UseUserPrefs } from '../hooks/useUserPrefs';
 
 const SYMBOL_NAMES: Record<string, string> = {
   '2308': '台達電',
@@ -15,19 +13,6 @@ const SYMBOL_NAMES: Record<string, string> = {
   '2330': '台積電',
   '2454': '聯發科',
   '3008': '大立光',
-};
-
-const loadWatchlist = (): string[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_WATCHLIST;
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed) && parsed.every((s) => typeof s === 'string')) return parsed;
-    return DEFAULT_WATCHLIST;
-  } catch (err) {
-    console.warn('failed to load watchlist', err);
-    return DEFAULT_WATCHLIST;
-  }
 };
 
 const fmt = (v: number | null, decimals = 1): string =>
@@ -82,20 +67,14 @@ const METRICS: { key: MetricKey; label: string; unit: string; formatFn?: (v: num
   { key: 'eps', label: 'EPS', unit: '元', formatFn: (v) => fmt(v, 2) },
 ];
 
-type Props = {
-  watchlist?: string[];
-  setWatchlist?: (v: string[]) => void;
-};
+type Props = { prefs: UseUserPrefs };
 
-export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatchlistProp }: Props) => {
+export const FinancialsPage = ({ prefs }: Props) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [watchlist, setWatchlistLocal] = useState<string[]>(watchlistProp ?? loadWatchlist);
   const [input, setInput] = useState(() => searchParams.get('symbol') ?? '2330');
 
   const symbol = searchParams.get('symbol') ?? '2330';
-
-  const setWatchlist = setWatchlistProp ?? setWatchlistLocal;
 
   const financialsQuery = useFinancials(symbol);
 
@@ -116,15 +95,7 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
     const v = input.trim().toUpperCase();
     if (v.length === 0) return;
     setSearchParams({ symbol: v });
-    if (!watchlist.includes(v) && /^[A-Z0-9]{4,6}$/.test(v)) {
-      const next = [v, ...watchlist].slice(0, 10);
-      setWatchlist(next);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch (err) {
-        console.warn('failed to persist watchlist', err);
-      }
-    }
+    prefs.addToWatchlist(v);
   };
 
   const pick = (s: string) => {
@@ -132,21 +103,19 @@ export const FinancialsPage = ({ watchlist: watchlistProp, setWatchlist: setWatc
     setInput(s);
   };
 
-  const remove = (s: string) => {
-    const next = watchlist.filter((x) => x !== s);
-    setWatchlist(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (err) {
-      console.warn('failed to persist watchlist', err);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-ink-950">
       <TopNav />
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <WatchlistStrip current={symbol} watchlist={watchlist} onPick={pick} onRemove={remove} />
+        <WatchlistStrip
+          current={symbol}
+          watchlist={prefs.watchlist}
+          recents={prefs.recents}
+          onPick={pick}
+          onRemove={prefs.removeFromWatchlist}
+          onRemoveRecent={prefs.removeRecent}
+          onStar={prefs.toggleWatchlist}
+        />
 
         <div className="bg-ink-900 border border-ink-700 shadow-sm rounded-2xl px-5 py-4 mb-4 flex items-baseline gap-4 flex-wrap">
           <h1 className="text-lg font-semibold text-slate-900">
