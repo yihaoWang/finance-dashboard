@@ -24,10 +24,37 @@ export const onRequest: PagesFunction<Env> = async ({ request, env }) => {
   // Strip browser hop-by-hop headers that confuse upstream
   headers.delete('host');
 
-  return fetch(target.toString(), {
+  const upstream = await fetch(target.toString(), {
     method: request.method,
     headers,
     body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
     redirect: 'manual',
+  });
+
+  // If the worker bounced us to CF Access SSO (3xx with cross-origin Location),
+  // never pass that through to the browser — it would become a cross-origin
+  // redirect on a same-origin fetch and trip CORS. Surface a same-origin JSON
+  // error instead with the upstream status for debugging.
+  if (upstream.status >= 300 && upstream.status < 400) {
+    return new Response(
+      JSON.stringify({
+        error: 'upstream_access_challenge',
+        upstream_status: upstream.status,
+        upstream_location: upstream.headers.get('location'),
+      }),
+      { status: 502, headers: { 'content-type': 'application/json' } },
+    );
+  }
+
+  // Strip the worker's CF Access service-auth Set-Cookie. If we forward it,
+  // the browser overwrites the user's pages.dev CF_Authorization (which has
+  // AUDs for both apps) with the worker-only AUD cookie, and the next
+  // /api/* fetch fails Pages Access -> 302 SSO -> cross-origin -> CORS.
+  const cleaned = new Headers(upstream.headers);
+  cleaned.delete('set-cookie');
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: cleaned,
   });
 };
